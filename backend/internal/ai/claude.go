@@ -122,8 +122,17 @@ func companySuffix(company string) string {
 func groundingContext(g Grounding) string {
 	var b strings.Builder
 	b.WriteString("Name: Satria Aluh Perwira Nusa — fullstack/backend engineer, 4 years' experience.\n")
-	if len(g.Site.Skills) > 0 {
-		b.WriteString("Skills: " + strings.Join(g.Site.Skills, ", ") + ".\n")
+	if len(g.Site.Headline) > 0 {
+		b.WriteString("Top strengths: " + strings.Join(g.Site.Headline, ", ") + ".\n")
+	}
+	if len(g.Site.SkillGroups) > 0 {
+		b.WriteString("Skills by category:\n")
+		for _, grp := range g.Site.SkillGroups {
+			if len(grp.Items) == 0 {
+				continue
+			}
+			b.WriteString("  " + grp.Category + ": " + strings.Join(grp.Items, ", ") + "\n")
+		}
 	}
 	if len(g.Site.Experience) > 0 {
 		b.WriteString("Experience:\n")

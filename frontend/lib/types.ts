@@ -37,8 +37,14 @@ export interface ExperienceItem {
   highlights: string[];
 }
 
+export interface SkillGroup {
+  category: string;
+  items: string[];
+}
+
 export interface SiteContent {
-  skills: string[];
+  headline: string[];
+  skillGroups: SkillGroup[];
   experience: ExperienceItem[];
   heroImage: string;
   projectImage: string;

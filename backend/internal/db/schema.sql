@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS projects (
 -- Site content (was site-data.js, key sn_site_content) — single row.
 CREATE TABLE IF NOT EXISTS site_content (
     id            INTEGER PRIMARY KEY CHECK (id = 1),
-    skills        TEXT NOT NULL DEFAULT '[]',
+    skills        TEXT NOT NULL DEFAULT '{}', -- JSON {headline:[], groups:[{category,items[]}]}; legacy flat [] still read
     experience    TEXT NOT NULL DEFAULT '[]',
     hero_image    TEXT NOT NULL DEFAULT '',
     project_image TEXT NOT NULL DEFAULT ''

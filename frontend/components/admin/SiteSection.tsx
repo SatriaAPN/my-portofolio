@@ -5,7 +5,8 @@ import { adminUpdateSite } from "@/lib/api";
 import { resizeImageToDataURL } from "@/lib/image";
 import { useToast } from "@/components/Toast";
 import { CompanyMark } from "@/components/CompanyMark";
-import type { SiteContent } from "@/lib/types";
+import type { SiteContent, SkillGroup } from "@/lib/types";
+import { SKILL_CATEGORIES } from "@/lib/skills";
 
 const card: React.CSSProperties = { background: "#fff", border: "1px solid #eceef2", borderRadius: 14 };
 const inputBase: React.CSSProperties = { border: "1px solid #eceef2", borderRadius: 9, padding: "9px 11px", width: "100%" };
@@ -13,7 +14,8 @@ const inputBase: React.CSSProperties = { border: "1px solid #eceef2", borderRadi
 export function SiteSection({ site, onRefresh }: { site: SiteContent; onRefresh: () => void }) {
   const toast = useToast();
   const [sc, setSc] = useState(site);
-  const [newSkill, setNewSkill] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [newHeadline, setNewHeadline] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => setSc(site), [site]);
@@ -68,15 +70,49 @@ export function SiteSection({ site, onRefresh }: { site: SiteContent; onRefresh:
     }
   };
 
-  const addSkill = (e: React.FormEvent) => {
-    e.preventDefault();
-    const s = newSkill.trim();
-    if (!s) return;
-    setNewSkill("");
-    save({ ...sc, skills: [...sc.skills, s] }, true);
+  // Always show the 4 canonical buckets in order, merging in any stored items,
+  // then append any non-canonical groups (e.g. a legacy "Skills" bucket) so
+  // nothing entered before categorization is ever hidden.
+  const byName = new Map(sc.skillGroups.map((g) => [g.category, g.items] as const));
+  const displayGroups: SkillGroup[] = [
+    ...SKILL_CATEGORIES.map((c) => ({ category: c, items: byName.get(c) ?? [] })),
+    ...sc.skillGroups.filter((g) => !SKILL_CATEGORIES.includes(g.category as (typeof SKILL_CATEGORIES)[number])),
+  ];
+
+  const setGroupItems = (category: string, items: string[]) => {
+    const next = sc.skillGroups.some((g) => g.category === category)
+      ? sc.skillGroups.map((g) => (g.category === category ? { ...g, items } : g))
+      : [...sc.skillGroups, { category, items }];
+    save({ ...sc, skillGroups: next }, true);
   };
 
-  const removeSkill = (i: number) => save({ ...sc, skills: sc.skills.filter((_, j) => j !== i) }, true);
+  const addSkill = (category: string) => {
+    const v = (drafts[category] || "").trim();
+    if (!v) return;
+    const items = byName.get(category) ?? [];
+    if (items.some((x) => x.toLowerCase() === v.toLowerCase())) {
+      setDrafts((d) => ({ ...d, [category]: "" }));
+      return;
+    }
+    setDrafts((d) => ({ ...d, [category]: "" }));
+    setGroupItems(category, [...items, v]);
+  };
+
+  const removeSkill = (category: string, i: number) => {
+    const items = byName.get(category) ?? [];
+    setGroupItems(category, items.filter((_, j) => j !== i));
+  };
+
+  const addHeadline = (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = newHeadline.trim();
+    if (!v) return;
+    setNewHeadline("");
+    if (sc.headline.some((x) => x.toLowerCase() === v.toLowerCase())) return;
+    save({ ...sc, headline: [...sc.headline, v] }, true);
+  };
+
+  const removeHeadline = (i: number) => save({ ...sc, headline: sc.headline.filter((_, j) => j !== i) }, true);
 
   return (
     <div className="flex flex-col gap-5">
@@ -247,34 +283,37 @@ export function SiteSection({ site, onRefresh }: { site: SiteContent; onRefresh:
         </div>
       </div>
 
-      {/* Stack & skills */}
+      {/* Headline strengths */}
       <div style={card}>
-        <div style={{ padding: "18px 22px", borderBottom: "1px solid #eceef2", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 16 }}>
-          Stack &amp; skills
+        <div style={{ padding: "18px 22px", borderBottom: "1px solid #eceef2" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 16 }}>Headline strengths</div>
+          <div style={{ fontSize: 12.5, color: "#9098aa", marginTop: 3 }}>
+            The 3–4 you lead with — shown as the CORE row on the site and first on tailored CVs.
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2.5" style={{ padding: "18px 22px" }}>
-          {sc.skills.map((sk, i) => (
+          {sc.headline.map((sk, i) => (
             <span
               key={`${sk}-${i}`}
               className="inline-flex items-center gap-2"
-              style={{ border: "1px solid #e5e8ef", padding: "7px 9px 7px 15px", borderRadius: 999, fontSize: 14, fontWeight: 500 }}
+              style={{ background: "#4f5bd5", color: "#fff", padding: "7px 9px 7px 15px", borderRadius: 999, fontSize: 14, fontWeight: 600 }}
             >
               {sk}
               <button
-                onClick={() => removeSkill(i)}
-                title="Remove skill"
-                className="flex items-center justify-center transition-colors hover:bg-[#fdf1f1] hover:text-[#b3383c]"
-                style={{ background: "#f2f3f8", border: "none", color: "#54596a", width: 20, height: 20, borderRadius: "50%", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}
+                onClick={() => removeHeadline(i)}
+                title="Remove from headline"
+                className="flex items-center justify-center transition-colors hover:bg-[#3a45b8]"
+                style={{ background: "rgba(255,255,255,0.22)", border: "none", color: "#fff", width: 20, height: 20, borderRadius: "50%", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}
               >
                 ×
               </button>
             </span>
           ))}
-          <form onSubmit={addSkill} className="flex items-center gap-2">
+          <form onSubmit={addHeadline} className="flex items-center gap-2">
             <input
-              value={newSkill}
-              onChange={(e) => setNewSkill(e.target.value)}
-              placeholder="Add a skill…"
+              value={newHeadline}
+              onChange={(e) => setNewHeadline(e.target.value)}
+              placeholder="Add a strength…"
               className="focus:border-primary focus:outline-none"
               style={{ border: "1px solid #eceef2", borderRadius: 999, padding: "8px 15px", fontSize: 14, fontFamily: "var(--font-sans)", color: "#1a1c22", width: 150 }}
             />
@@ -287,6 +326,69 @@ export function SiteSection({ site, onRefresh }: { site: SiteContent; onRefresh:
             </button>
           </form>
         </div>
+        {sc.headline.length > 4 && (
+          <div style={{ padding: "0 22px 16px", fontSize: 12, color: "#9098aa" }}>
+            Tip: keep it to 3–4 for impact — the rest still show in the categories below.
+          </div>
+        )}
+      </div>
+
+      {/* Skills by category */}
+      <div style={card}>
+        <div style={{ padding: "18px 22px", borderBottom: "1px solid #eceef2" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 16 }}>Skills by category</div>
+          <div style={{ fontSize: 12.5, color: "#9098aa", marginTop: 3 }}>
+            Grouped for display; the Tailored CV still matches across every skill here.
+          </div>
+        </div>
+        {displayGroups.map((g) => (
+          <div key={g.category} style={{ padding: "16px 22px", borderBottom: "1px solid #f2f3f8" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.05em", textTransform: "uppercase", color: "#9098aa", marginBottom: 11 }}>
+              {g.category}
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              {g.items.map((sk, i) => (
+                <span
+                  key={`${sk}-${i}`}
+                  className="inline-flex items-center gap-2"
+                  style={{ border: "1px solid #e5e8ef", padding: "7px 9px 7px 15px", borderRadius: 999, fontSize: 14, fontWeight: 500 }}
+                >
+                  {sk}
+                  <button
+                    onClick={() => removeSkill(g.category, i)}
+                    title="Remove skill"
+                    className="flex items-center justify-center transition-colors hover:bg-[#fdf1f1] hover:text-[#b3383c]"
+                    style={{ background: "#f2f3f8", border: "none", color: "#54596a", width: 20, height: 20, borderRadius: "50%", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  addSkill(g.category);
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  value={drafts[g.category] || ""}
+                  onChange={(e) => setDrafts((d) => ({ ...d, [g.category]: e.target.value }))}
+                  placeholder="Add…"
+                  className="focus:border-primary focus:outline-none"
+                  style={{ border: "1px solid #eceef2", borderRadius: 999, padding: "8px 15px", fontSize: 14, fontFamily: "var(--font-sans)", color: "#1a1c22", width: 130 }}
+                />
+                <button
+                  type="submit"
+                  className="transition-colors hover:bg-[#e3e6fa]"
+                  style={{ background: "#eef0fb", color: "#4f5bd5", border: "none", borderRadius: 999, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="flex items-center gap-[7px]" style={{ fontSize: 13, color: "#9098aa" }}>

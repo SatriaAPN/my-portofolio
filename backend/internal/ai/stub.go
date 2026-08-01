@@ -115,9 +115,13 @@ func (StubProvider) Tailor(jd string, g Grounding) (models.CV, error) {
 	site := g.Site
 	projects := g.Projects
 
+	// Skills are stored grouped by category; the matcher works on the flat token
+	// list, so scoring is identical to the pre-categorized behavior.
+	allSkills := site.AllSkills()
+
 	// Haystack of everything we know about the candidate.
 	var parts []string
-	parts = append(parts, strings.Join(site.Skills, " "))
+	parts = append(parts, strings.Join(allSkills, " "))
 	for _, x := range site.Experience {
 		parts = append(parts, x.Role+" "+x.Desc)
 	}
@@ -135,7 +139,7 @@ func (StubProvider) Tailor(jd string, g Grounding) (models.CV, error) {
 	}
 
 	skillHas := func(name string) bool {
-		for _, sk := range site.Skills {
+		for _, sk := range allSkills {
 			if strings.EqualFold(sk, name) {
 				return true
 			}
@@ -184,7 +188,7 @@ func (StubProvider) Tailor(jd string, g Grounding) (models.CV, error) {
 	}
 
 	// Skills reordered: matched ones first (stable).
-	skillsOrdered := append([]string{}, site.Skills...)
+	skillsOrdered := append([]string{}, allSkills...)
 	sort.SliceStable(skillsOrdered, func(i, j int) bool {
 		return boolToInt(!inSet[canonical(skillsOrdered[i], matchedNames)]) < boolToInt(!inSet[canonical(skillsOrdered[j], matchedNames)])
 	})

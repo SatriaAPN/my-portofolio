@@ -148,7 +148,15 @@ func seedSite(conn *sql.DB) error {
 	if n > 0 {
 		return nil
 	}
-	skills, _ := json.Marshal([]string{"Go", "JavaScript", "SQL", "Python", "React", "PostgreSQL"})
+	skills, _ := json.Marshal(map[string]any{
+		"headline": []string{"Go", "React", "PostgreSQL"},
+		"groups": []map[string]any{
+			{"category": "Languages", "items": []string{"Go", "Python", "JavaScript", "TypeScript", "SQL"}},
+			{"category": "Frameworks & Libraries", "items": []string{"React", "Next.js", "Node.js"}},
+			{"category": "Databases", "items": []string{"PostgreSQL", "Redis"}},
+			{"category": "Tools & Infra", "items": []string{"Docker", "Kubernetes", "Kafka", "Prometheus", "Grafana", "Git"}},
+		},
+	})
 	experience, _ := json.Marshal([]map[string]any{
 		{
 			"period": "2024 — NOW", "role": "Fullstack Engineer", "company": "StellarPay", "location": "Jakarta", "logo": "",

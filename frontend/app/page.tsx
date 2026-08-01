@@ -8,8 +8,16 @@ import type { Post, Project, SiteContent } from "@/lib/types";
 const STRIPE =
   "repeating-linear-gradient(45deg,#eef0f5,#eef0f5 9px,#e5e8ef 9px,#e5e8ef 18px)";
 
+const stackLabel: React.CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 11,
+  letterSpacing: "0.05em",
+  textTransform: "uppercase",
+  color: "#9098aa",
+};
+
 export default async function HomePage() {
-  let site: SiteContent = { skills: [], experience: [], heroImage: "", projectImage: "" };
+  let site: SiteContent = { headline: [], skillGroups: [], experience: [], heroImage: "", projectImage: "" };
   let posts: Post[] = [];
   let projects: Project[] = [];
   try {
@@ -122,32 +130,59 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* STACK CHIPS */}
-      <section
-        className="flex flex-wrap gap-2.5 px-5 py-7 md:px-10"
-        style={{ borderTop: "1px solid #eceef2", borderBottom: "1px solid #eceef2" }}
-      >
-        <span
-          className="mr-1.5 self-center"
-          style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9098aa" }}
+      {/* STACK */}
+      {(site.headline.length > 0 || site.skillGroups.some((g) => g.items.length > 0)) && (
+        <section
+          className="flex flex-col gap-5 px-5 py-7 md:px-10"
+          style={{ borderTop: "1px solid #eceef2", borderBottom: "1px solid #eceef2" }}
         >
-          STACK
-        </span>
-        {site.skills.map((sk) => (
-          <span
-            key={sk}
-            style={{
-              border: "1px solid #e5e8ef",
-              padding: "8px 15px",
-              borderRadius: 999,
-              fontSize: 14,
-              fontWeight: 500,
-            }}
-          >
-            {sk}
-          </span>
-        ))}
-      </section>
+          {site.headline.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <span style={stackLabel}>CORE STACK</span>
+              <div className="flex flex-wrap gap-2.5">
+                {site.headline.map((sk) => (
+                  <span
+                    key={sk}
+                    style={{
+                      background: "#4f5bd5",
+                      color: "#fff",
+                      padding: "8px 15px",
+                      borderRadius: 999,
+                      fontSize: 14,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {sk}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {site.skillGroups
+            .filter((g) => g.items.length > 0)
+            .map((g) => (
+              <div key={g.category} className="flex flex-col gap-2.5">
+                <span style={stackLabel}>{g.category}</span>
+                <div className="flex flex-wrap gap-2.5">
+                  {g.items.map((sk) => (
+                    <span
+                      key={sk}
+                      style={{
+                        border: "1px solid #e5e8ef",
+                        padding: "8px 15px",
+                        borderRadius: 999,
+                        fontSize: 14,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {sk}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+        </section>
+      )}
 
       {/* WRITING */}
       <Reveal as="section">

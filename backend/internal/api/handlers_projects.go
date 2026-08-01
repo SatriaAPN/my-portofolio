@@ -81,8 +81,11 @@ func (s *Server) handleUpdateSite(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "invalid request body")
 		return
 	}
-	if sc.Skills == nil {
-		sc.Skills = []string{}
+	if sc.Headline == nil {
+		sc.Headline = []string{}
+	}
+	if sc.SkillGroups == nil {
+		sc.SkillGroups = []models.SkillGroup{}
 	}
 	if sc.Experience == nil {
 		sc.Experience = []models.ExperienceItem{}

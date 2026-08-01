@@ -13,6 +13,7 @@ import {
   getSite,
 } from "@/lib/api";
 import type { CV, Project, SiteContent } from "@/lib/types";
+import { flattenSkills } from "@/lib/skills";
 
 const SAMPLE_JD = `Senior Backend Engineer — StreamPay
 
@@ -219,7 +220,7 @@ function InputStage({
   const sources = [
     { label: "Experience", count: `${site?.experience.length ?? 0} roles` },
     { label: "Projects", count: `${projects.length} (${projects.filter((p) => p.featured).length} featured)` },
-    { label: "Skills", count: String(site?.skills.length ?? 0) },
+    { label: "Skills", count: String(site ? flattenSkills(site.skillGroups).length : 0) },
     { label: "Blog posts", count: `${livePosts} live` },
   ];
   return (
