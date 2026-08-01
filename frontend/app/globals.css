@@ -1,0 +1,299 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Design tokens — from the handoff's "Design Tokens" section.
+   Exposed as Tailwind utilities via @theme (bg-primary, text-ink, …).
+   ============================================================ */
+@theme {
+  /* text */
+  --color-ink: #1a1c22;
+  --color-body2: #2c2f38;
+  --color-secondary: #54596a;
+  --color-tertiary: #3a3d47;
+  --color-muted: #9098aa;
+  --color-faint: #c3c8d4;
+
+  /* borders */
+  --color-line: #eceef2;
+  --color-line2: #e5e8ef;
+  --color-line3: #e2e5ee;
+  --color-line4: #d9dce4;
+  --color-hairline: #f2f3f8;
+
+  /* surfaces */
+  --color-surface: #ffffff;
+  --color-surface2: #f6f7fb;
+  --color-surface3: #f9fafc;
+
+  /* brand */
+  --color-primary: #4f5bd5;
+  --color-primaryhover: #3a45b8;
+  --color-tint: #eef0fb;
+  --color-tint2: #dfe2fb;
+
+  /* status */
+  --color-success: #2f7d4f;
+  --color-successbg: #e9f6ee;
+  --color-dot: #34c778;
+  --color-warn: #a4661f;
+  --color-warnbg: #fdf3e8;
+  --color-danger: #b3383c;
+  --color-dangerbg: #fdf1f1;
+
+  /* code */
+  --color-codebg: #1e2130;
+  --color-codefg: #d6d9f7;
+
+  /* fonts (variables injected by next/font in layout.tsx) */
+  --font-display: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  --font-sans: var(--font-work-sans), "Work Sans", sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), "IBM Plex Mono", monospace;
+
+  /* radii */
+  --radius-btn: 10px;
+  --radius-card: 14px;
+  --radius-lg: 18px;
+
+  /* shadows */
+  --shadow-card: 0 12px 34px rgba(30, 34, 70, 0.08);
+  --shadow-cardhover: 0 16px 40px rgba(26, 28, 34, 0.1);
+  --shadow-paper: 0 18px 50px rgba(30, 34, 70, 0.08);
+  --shadow-toast: 0 12px 34px rgba(10, 12, 30, 0.25);
+}
+
+/* Section heading (H2 32px Space Grotesk) reused across visitor pages. */
+.section-h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 32px;
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: #1a1c22;
+}
+
+/* Named gradients reused across screens. */
+:root {
+  --grad-brand: linear-gradient(135deg, #4f5bd5, #6a5be0);
+  --grad-ai: linear-gradient(135deg, #4f8cff, #7a5cff 55%, #e35bd0);
+  --grad-ai-100: linear-gradient(100deg, #4f8cff, #7a5cff 45%, #e35bd0);
+  --stripe: repeating-linear-gradient(45deg, #eef0f5, #eef0f5 9px, #e5e8ef 9px, #e5e8ef 18px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Base element styles live in @layer base so Tailwind utilities
+   (e.g. text-white on a link) always win over them. */
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    color: #1a1c22;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: #4f5bd5;
+    text-decoration: none;
+  }
+  a:hover {
+    color: #3a45b8;
+  }
+}
+
+::selection {
+  background: #dfe2fb;
+}
+
+/* thin scrollbars (chat log, side panels) */
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #e5e8ef;
+  border-radius: 8px;
+}
+
+/* ============================================================
+   Keyframes / animation helpers
+   ============================================================ */
+@keyframes fadeup {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+@keyframes orbPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(122, 92, 255, 0.35);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 14px rgba(122, 92, 255, 0);
+  }
+}
+@keyframes stepBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+}
+
+.anim-fadeup {
+  animation: fadeup 0.25s ease both;
+}
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b7bcca;
+  animation: typing 1s infinite;
+}
+
+/* Scroll-reveal: sections start hidden, .in reveals them. */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================================
+   Rich-text article body (blog post + editor preview)
+   Matches the "Body" styling from the handoff.
+   ============================================================ */
+.article {
+  font-size: 17px;
+  line-height: 1.75;
+  color: #2c2f38;
+}
+.article > * + * {
+  margin-top: 1.15em;
+}
+.article h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: #1a1c22;
+  margin: 1.6em 0 0.2em;
+}
+.article h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 21px;
+  color: #1a1c22;
+  margin: 1.3em 0 0.1em;
+}
+.article a {
+  color: #4f5bd5;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.article ul,
+.article ol {
+  padding-left: 1.3em;
+}
+.article li + li {
+  margin-top: 0.4em;
+}
+.article code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: #eef0fb;
+  color: #3a45b8;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.article pre {
+  background: #1e2130;
+  color: #d6d9f7;
+  border-radius: 12px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.article pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+.article blockquote {
+  border-left: 3px solid #4f5bd5;
+  padding: 4px 0 4px 20px;
+  margin-left: 0;
+  color: #3a3d47;
+  font-size: 20px;
+  line-height: 1.5;
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+.article img {
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+/* Rich-text editor placeholder (empty contentEditable). */
+[data-rte]:empty::before {
+  content: attr(data-placeholder);
+  color: #9098aa;
+}
+[data-rte] {
+  outline: none;
+}
+
+/* Print: isolate the CV paper (Download PDF = window.print()). */
+@media print {
+  .print-hide {
+    display: none !important;
+  }
+  .cv-paper {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+}
