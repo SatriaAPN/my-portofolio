@@ -7,9 +7,7 @@ import { AdminGate } from "@/components/admin/AdminGate";
 import { ToastProvider, useToast } from "@/components/Toast";
 import { Badge } from "@/components/Badge";
 import { adminCreatePost, adminGetPost, adminUpdatePost, getSite } from "@/lib/api";
-import type { Category, PostStatus } from "@/lib/types";
-
-const CATEGORIES: Category[] = ["Performance", "Architecture", "Databases", "Testing"];
+import type { PostStatus } from "@/lib/types";
 
 function slugify(s: string) {
   return s
@@ -39,7 +37,6 @@ function EditorInner() {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
-  const [category, setCategory] = useState<Category>("Performance");
   const [company, setCompany] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagDraft, setTagDraft] = useState("");
@@ -58,7 +55,6 @@ function EditorInner() {
       .then((p) => {
         setTitle(p.title);
         setExcerpt(p.excerpt);
-        setCategory(p.category);
         setCompany(p.company || "");
         setTags(p.tags || []);
         setStatus(p.status);
@@ -122,7 +118,6 @@ function EditorInner() {
       title: title.trim(),
       excerpt,
       body,
-      category,
       company: company.trim(),
       tags,
       status: nextStatus,
@@ -250,20 +245,6 @@ function EditorInner() {
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#1a1c22" }}>{readMeta}</span>
                 </div>
               </div>
-            </div>
-            <div style={rail}>
-              <div style={railLabel}>CATEGORY</div>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as Category)}
-                style={{ width: "100%", border: "1px solid #e2e5ee", borderRadius: 11, padding: "11px 12px", fontSize: 14, fontFamily: "var(--font-sans)", color: "#1a1c22", background: "#fff", cursor: "pointer" }}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
             </div>
             <div style={rail}>
               <div style={railLabel}>COMPANY</div>

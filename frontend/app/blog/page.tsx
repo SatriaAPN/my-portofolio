@@ -68,9 +68,6 @@ export default async function BlogPage() {
             </div>
             <div className="flex flex-col justify-center" style={{ padding: "40px 44px" }}>
               <div className="mb-3.5 flex items-center gap-3">
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#4f5bd5" }}>
-                  {featured.category.toUpperCase()}
-                </span>
                 <span
                   style={{ background: "#eef0fb", color: "#4f5bd5", fontFamily: "var(--font-mono)", fontSize: 10.5, padding: "4px 10px", borderRadius: 999 }}
                 >

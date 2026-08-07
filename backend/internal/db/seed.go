@@ -30,23 +30,22 @@ row := db.QueryRow(ctx, query, id)</code></pre>
 
 // seedPost mirrors one row from the handoff's blog-data.js SEED array.
 type seedPost struct {
-	Title    string
-	Category string
-	Status   string
-	Date     string
-	Views    string
-	ReadMin  int
-	Excerpt  string
+	Title   string
+	Status  string
+	Date    string
+	Views   string
+	ReadMin int
+	Excerpt string
 }
 
 var seedPosts = []seedPost{
-	{"Cutting p99 latency by 60% with connection pooling", "Performance", "LIVE", "Jul 12, 2026", "4,120", 7, "Where the pool actually saturates, what pgbouncer changes, and the graphs that told us we were done."},
-	{"Designing an event-driven order pipeline in Go", "Architecture", "LIVE", "Jun 28, 2026", "2,864", 11, "Outbox tables, idempotent consumers, and the failure modes we planned for before launch."},
-	{"Postgres indexes I wish I understood earlier", "Databases", "LIVE", "Jun 03, 2026", "6,309", 9, "Partial, covering, and expression indexes — when each one pays off, and how to read a query plan without guessing."},
-	{"Profiling Go services in production safely", "Performance", "LIVE", "Apr 02, 2026", "1,987", 8, "pprof endpoints, continuous profiling, and reading flame graphs under real traffic."},
-	{"Migrating a monolith to event-driven services", "Architecture", "LIVE", "Mar 10, 2026", "3,455", 6, "How we carved services out of a five-year-old monolith without a big-bang rewrite."},
-	{"Testing background jobs without flaky suites", "Testing", "DRAFT", "—", "—", 6, "Deterministic clocks, fake queues, and drawing the line between unit and integration."},
-	{"What I learned shipping a realtime sync engine", "Architecture", "DRAFT", "—", "—", 12, "Conflict resolution, presence, and why the WebSocket layer was the easy part."},
+	{"Cutting p99 latency by 60% with connection pooling", "LIVE", "Jul 12, 2026", "4,120", 7, "Where the pool actually saturates, what pgbouncer changes, and the graphs that told us we were done."},
+	{"Designing an event-driven order pipeline in Go", "LIVE", "Jun 28, 2026", "2,864", 11, "Outbox tables, idempotent consumers, and the failure modes we planned for before launch."},
+	{"Postgres indexes I wish I understood earlier", "LIVE", "Jun 03, 2026", "6,309", 9, "Partial, covering, and expression indexes — when each one pays off, and how to read a query plan without guessing."},
+	{"Profiling Go services in production safely", "LIVE", "Apr 02, 2026", "1,987", 8, "pprof endpoints, continuous profiling, and reading flame graphs under real traffic."},
+	{"Migrating a monolith to event-driven services", "LIVE", "Mar 10, 2026", "3,455", 6, "How we carved services out of a five-year-old monolith without a big-bang rewrite."},
+	{"Testing background jobs without flaky suites", "DRAFT", "—", "—", 6, "Deterministic clocks, fake queues, and drawing the line between unit and integration."},
+	{"What I learned shipping a realtime sync engine", "DRAFT", "—", "—", 12, "Conflict resolution, presence, and why the WebSocket layer was the easy part."},
 }
 
 func seed(conn *sql.DB) error {
@@ -101,9 +100,9 @@ func seedPostsTable(conn *sql.DB) error {
 			body = sampleBody
 		}
 		_, err := conn.Exec(`INSERT INTO posts
-			(title, slug, category, status, date, views, read_min, excerpt, body, position)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			p.Title, util.Slugify(p.Title), p.Category, p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, body, i)
+			(title, slug, status, date, views, read_min, excerpt, body, position)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			p.Title, util.Slugify(p.Title), p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, body, i)
 		if err != nil {
 			return err
 		}

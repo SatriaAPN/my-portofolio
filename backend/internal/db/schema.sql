@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS posts (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     title      TEXT NOT NULL,
     slug       TEXT NOT NULL DEFAULT '',
-    category   TEXT NOT NULL DEFAULT 'Architecture', -- Performance|Architecture|Databases|Testing
     company    TEXT NOT NULL DEFAULT '',              -- optional: links post to an experience entry (site_content.experience[].company) for the CV generator
     tags       TEXT NOT NULL DEFAULT '[]',            -- JSON array of tags (e.g. ["Go","Kafka"]); shown on the blog + fed to the CV generator
     status     TEXT NOT NULL DEFAULT 'DRAFT',         -- LIVE|DRAFT

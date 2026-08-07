@@ -65,9 +65,6 @@ export default async function BlogPostPage({
         >
           <span style={{ fontSize: 15, lineHeight: 0 }}>←</span> All posts
         </Link>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: "0.06em", color: "#4f5bd5", marginBottom: 18 }}>
-          {post.category.toUpperCase()}
-        </div>
         <h1
           className="text-[32px] md:text-[44px]"
           style={{ fontFamily: "var(--font-display)", fontWeight: 600, lineHeight: 1.08, letterSpacing: "-0.025em", margin: "0 0 22px", textWrap: "balance" }}
@@ -113,14 +110,11 @@ export default async function BlogPostPage({
         dangerouslySetInnerHTML={{ __html: post.body || `<p>${post.excerpt}</p>` }}
       />
 
-      {/* TAGS + SHARE */}
+      {/* SHARE */}
       <div
-        className="mx-auto flex flex-wrap items-center justify-between gap-4 px-5 pb-11 md:px-10"
+        className="mx-auto flex flex-wrap items-center justify-end gap-4 px-5 pb-11 md:px-10"
         style={{ maxWidth: 760 }}
       >
-        <span style={{ border: "1px solid #e5e8ef", padding: "6px 13px", borderRadius: 999, fontSize: 13, color: "#54596a" }}>
-          {post.category}
-        </span>
         <CopyLinkButton />
       </div>
 

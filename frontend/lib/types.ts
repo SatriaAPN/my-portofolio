@@ -1,13 +1,11 @@
 // Mirrors the Go backend's JSON models (internal/models).
 
-export type Category = "Performance" | "Architecture" | "Databases" | "Testing";
 export type PostStatus = "LIVE" | "DRAFT";
 
 export interface Post {
   id: number;
   title: string;
   slug: string;
-  category: Category;
   company: string; // optional tag linking the post to an experience entry (CV generator)
   tags: string[]; // tags shown on the blog + used as skill evidence by the CV generator
   status: PostStatus;

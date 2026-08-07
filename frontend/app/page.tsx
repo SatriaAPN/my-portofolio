@@ -218,9 +218,11 @@ export default async function HomePage() {
               >
                 <div style={{ aspectRatio: "16/10", background: STRIPE }} />
                 <div style={{ padding: 20 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#4f5bd5", marginBottom: 10 }}>
-                    {b.category}
-                  </div>
+                  {b.tags.length > 0 && (
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#4f5bd5", marginBottom: 10 }}>
+                      {b.tags[0].toUpperCase()}
+                    </div>
+                  )}
                   <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, lineHeight: 1.2, margin: "0 0 10px" }}>
                     {b.title}
                   </h3>

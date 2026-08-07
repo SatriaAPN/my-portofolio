@@ -39,9 +39,6 @@ func (s *Server) handleCreatePost(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "invalid request body")
 		return
 	}
-	if p.Category == "" {
-		p.Category = "Architecture"
-	}
 	if p.Status == "" {
 		p.Status = "DRAFT"
 	}

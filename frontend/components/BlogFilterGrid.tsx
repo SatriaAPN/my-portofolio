@@ -6,12 +6,10 @@ import { Container } from "@/components/Container";
 import { PostTags } from "@/components/PostTags";
 import type { Post } from "@/lib/types";
 
-const CATS = ["All", "Performance", "Architecture", "Databases", "Testing"] as const;
 const STRIPE =
   "repeating-linear-gradient(45deg,#eef0f5,#eef0f5 9px,#e5e8ef 9px,#e5e8ef 18px)";
 
 export function BlogFilterGrid({ posts }: { posts: Post[] }) {
-  const [filter, setFilter] = useState<(typeof CATS)[number]>("All");
   const [tag, setTag] = useState<string | null>(null);
 
   // Unique tags across all posts (case-insensitive), alphabetical.
@@ -25,46 +23,11 @@ export function BlogFilterGrid({ posts }: { posts: Post[] }) {
   ).sort((a, b) => a.localeCompare(b));
 
   const shown = posts.filter(
-    (p) =>
-      (filter === "All" || p.category === filter) &&
-      (tag === null || p.tags.some((t) => t.toLowerCase() === tag.toLowerCase()))
+    (p) => tag === null || p.tags.some((t) => t.toLowerCase() === tag.toLowerCase())
   );
 
   return (
     <>
-      {/* CATEGORY FILTER */}
-      <Container className="flex flex-wrap items-center gap-2.5 pb-4">
-        <span
-          className="mr-1.5"
-          style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9098aa" }}
-        >
-          FILTER
-        </span>
-        {CATS.map((c) => {
-          const active = filter === c;
-          return (
-            <button
-              key={c}
-              onClick={() => setFilter(c)}
-              className="transition-colors"
-              style={{
-                padding: "8px 16px",
-                borderRadius: 999,
-                fontSize: 13.5,
-                fontWeight: 500,
-                cursor: "pointer",
-                fontFamily: "var(--font-sans)",
-                background: active ? "#4f5bd5" : "#fff",
-                color: active ? "#fff" : "#54596a",
-                border: `1px solid ${active ? "#4f5bd5" : "#e2e5ee"}`,
-              }}
-            >
-              {c}
-            </button>
-          );
-        })}
-      </Container>
-
       {/* TAG FILTER */}
       {allTags.length > 0 && (
         <Container className="flex flex-wrap items-center gap-2 pb-7">
@@ -72,7 +35,7 @@ export function BlogFilterGrid({ posts }: { posts: Post[] }) {
             className="mr-1.5"
             style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9098aa" }}
           >
-            TAGS
+            FILTER
           </span>
           <button
             onClick={() => setTag(null)}
@@ -128,9 +91,6 @@ export function BlogFilterGrid({ posts }: { posts: Post[] }) {
           >
             <div style={{ aspectRatio: "16/10", background: STRIPE }} />
             <div className="flex flex-1 flex-col gap-2.5" style={{ padding: 20 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#4f5bd5" }}>
-                {p.category.toUpperCase()}
-              </div>
               <h3
                 style={{
                   fontFamily: "var(--font-display)",

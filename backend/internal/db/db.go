@@ -45,6 +45,10 @@ func migrate(conn *sql.DB) error {
 	if err := renameColumn(conn, "posts", "tech", "tags"); err != nil {
 		return err
 	}
+	// Posts used to carry a fixed-enum category; tags replaced it.
+	if err := dropColumn(conn, "posts", "category"); err != nil {
+		return err
+	}
 
 	type addCol struct{ table, column, def string }
 	steps := []addCol{
@@ -65,6 +69,21 @@ func migrate(conn *sql.DB) error {
 		}
 		if _, err := conn.Exec("ALTER TABLE " + s.table + " ADD COLUMN " + s.column + " " + s.def); err != nil {
 			return fmt.Errorf("add %s.%s: %w", s.table, s.column, err)
+		}
+	}
+	return nil
+}
+
+// dropColumn removes table.column when present, so it's a no-op on fresh DBs
+// (schema.sql never created it) and safe to run repeatedly.
+func dropColumn(conn *sql.DB, table, column string) error {
+	has, err := columnExists(conn, table, column)
+	if err != nil {
+		return err
+	}
+	if has {
+		if _, err := conn.Exec("ALTER TABLE " + table + " DROP COLUMN " + column); err != nil {
+			return fmt.Errorf("drop %s.%s: %w", table, column, err)
 		}
 	}
 	return nil
