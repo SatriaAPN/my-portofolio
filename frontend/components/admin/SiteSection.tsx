@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { adminUpdateSite } from "@/lib/api";
+import { adminDeleteResume, adminSetResume, adminUpdateSite } from "@/lib/api";
 import { resizeImageToDataURL } from "@/lib/image";
+import { fileToDataURL } from "@/lib/file";
 import { useToast } from "@/components/Toast";
 import { CompanyMark } from "@/components/CompanyMark";
 import type { SiteContent, SkillGroup } from "@/lib/types";
@@ -67,6 +68,38 @@ export function SiteSection({ site, onRefresh }: { site: SiteContent; onRefresh:
       toast("Image updated");
     } catch {
       toast("Could not process image");
+    }
+  };
+
+  const onResumeFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    if (f.type !== "application/pdf") {
+      toast("Please choose a PDF file");
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      toast("PDF is larger than 5 MB");
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataURL(f);
+      await adminSetResume(dataUrl, f.name);
+      toast("Résumé updated");
+      onRefresh();
+    } catch {
+      toast("Could not upload the résumé");
+    }
+  };
+
+  const onResumeRemove = async () => {
+    try {
+      await adminDeleteResume();
+      toast("Résumé removed");
+      onRefresh();
+    } catch {
+      toast("Could not remove the résumé");
     }
   };
 
@@ -280,6 +313,67 @@ export function SiteSection({ site, onRefresh }: { site: SiteContent; onRefresh:
             )}
           </div>
           <div style={{ fontSize: 12, color: "#9098aa" }}>Shown in the portfolio hero. Square works best.</div>
+        </div>
+      </div>
+
+      {/* Résumé */}
+      <div style={card}>
+        <div style={{ padding: "18px 22px", borderBottom: "1px solid #eceef2", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 16 }}>
+          Résumé
+        </div>
+        <div style={{ padding: "20px 22px" }} className="flex flex-col gap-2.5">
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.05em", color: "#9098aa" }}>
+            RÉSUMÉ PDF
+          </div>
+          <div className="flex items-center gap-3">
+            <span
+              className="flex flex-none items-center justify-center"
+              style={{ width: 42, height: 42, borderRadius: 10, background: sc.hasResume ? "#eef0fb" : "var(--stripe)", fontSize: 20 }}
+            >
+              {sc.hasResume ? "📄" : ""}
+            </span>
+            <div className="flex min-w-0 flex-col">
+              {sc.hasResume ? (
+                <>
+                  <span className="truncate" style={{ fontSize: 14, color: "#1a1c22", fontWeight: 500 }}>
+                    {sc.resumeName || "resume.pdf"}
+                  </span>
+                  <a
+                    href="/api/resume"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                    style={{ fontSize: 12.5, color: "#4f5bd5" }}
+                  >
+                    Open current PDF ↗
+                  </a>
+                </>
+              ) : (
+                <span style={{ fontSize: 13.5, color: "#9098aa" }}>No résumé uploaded yet</span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <label
+              className="cursor-pointer transition-colors hover:bg-[#e3e6fa]"
+              style={{ background: "#eef0fb", color: "#4f5bd5", borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600 }}
+            >
+              {sc.hasResume ? "Replace PDF" : "Upload PDF"}
+              <input type="file" accept="application/pdf" onChange={onResumeFile} className="hidden" />
+            </label>
+            {sc.hasResume && (
+              <button
+                onClick={onResumeRemove}
+                className="transition-colors hover:text-[#b3383c]"
+                style={{ background: "transparent", border: "none", color: "#9098aa", fontSize: 13, cursor: "pointer", padding: "8px 6px", fontFamily: "var(--font-sans)" }}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          <div style={{ fontSize: 12, color: "#9098aa" }}>
+            Opens from the “Résumé” button in the site header. PDF up to 5 MB.
+          </div>
         </div>
       </div>
 

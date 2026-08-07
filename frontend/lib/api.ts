@@ -103,6 +103,16 @@ export const adminDeleteProject = (id: number) =>
 export const adminUpdateSite = (s: SiteContent) =>
   req<SiteContent>("/api/admin/site", { method: "PUT", body: JSON.stringify(s) });
 
+/* ---------- Admin: résumé PDF ---------- */
+
+export const adminSetResume = (pdf: string, name: string) =>
+  req<{ ok: boolean; name: string; updated: string }>("/api/admin/resume", {
+    method: "PUT",
+    body: JSON.stringify({ pdf, name }),
+  });
+export const adminDeleteResume = () =>
+  req<{ ok: boolean }>("/api/admin/resume", { method: "DELETE" });
+
 /* ---------- Admin: tailored CVs ---------- */
 
 export const adminListCVs = () => req<CV[]>("/api/admin/cv");

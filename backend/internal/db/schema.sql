@@ -38,11 +38,14 @@ CREATE TABLE IF NOT EXISTS projects (
 
 -- Site content (was site-data.js, key sn_site_content) — single row.
 CREATE TABLE IF NOT EXISTS site_content (
-    id            INTEGER PRIMARY KEY CHECK (id = 1),
-    skills        TEXT NOT NULL DEFAULT '{}', -- JSON {headline:[], groups:[{category,items[]}]}; legacy flat [] still read
-    experience    TEXT NOT NULL DEFAULT '[]',
-    hero_image    TEXT NOT NULL DEFAULT '',
-    project_image TEXT NOT NULL DEFAULT ''
+    id             INTEGER PRIMARY KEY CHECK (id = 1),
+    skills         TEXT NOT NULL DEFAULT '{}', -- JSON {headline:[], groups:[{category,items[]}]}; legacy flat [] still read
+    experience     TEXT NOT NULL DEFAULT '[]',
+    hero_image     TEXT NOT NULL DEFAULT '',
+    project_image  TEXT NOT NULL DEFAULT '',
+    resume_pdf     TEXT NOT NULL DEFAULT '', -- base64 (no data: prefix) of the uploaded résumé PDF
+    resume_name    TEXT NOT NULL DEFAULT '', -- original filename, used for the download
+    resume_updated TEXT NOT NULL DEFAULT ''  -- when it was last uploaded (e.g. 'Aug 01, 2026')
 );
 
 -- Tailored CV history (was cv-data.js, key sn_cv_history, capped 20)

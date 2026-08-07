@@ -51,7 +51,7 @@ export default async function BlogPostPage({
   const newer = idx > 0 ? live[idx - 1] : undefined;
 
   return (
-    <main style={{ maxWidth: 1180, margin: "0 auto" }}>
+    <main>
       <ReadingProgress />
       <SiteNav active="writing" variant="inner" />
 

@@ -47,6 +47,7 @@ func (s *Server) Router(allowedOrigin string) http.Handler {
 	r.Get("/api/posts", s.handleListLivePosts)
 	r.Get("/api/posts/{slug}", s.handleGetPostBySlug)
 	r.Get("/api/projects", s.handleListProjects)
+	r.Get("/api/resume", s.handleGetResume)
 	r.Get("/api/ai/common-questions", s.handleCommonQuestions)
 	r.Post("/api/ai/ask", s.handleAsk)
 
@@ -71,6 +72,8 @@ func (s *Server) Router(allowedOrigin string) http.Handler {
 		r.Delete("/projects/{id}", s.handleDeleteProject)
 
 		r.Put("/site", s.handleUpdateSite)
+		r.Put("/resume", s.handleSetResume)
+		r.Delete("/resume", s.handleDeleteResume)
 
 		r.Get("/cv", s.handleListCV)
 		r.Get("/cv/{id}", s.handleGetCV)

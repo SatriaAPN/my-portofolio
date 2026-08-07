@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Container } from "@/components/Container";
 import type { Post } from "@/lib/types";
 
 const CATS = ["All", "Performance", "Architecture", "Databases", "Testing"] as const;
@@ -15,7 +16,7 @@ export function BlogFilterGrid({ posts }: { posts: Post[] }) {
   return (
     <>
       {/* FILTERS */}
-      <div className="flex flex-wrap items-center gap-2.5 px-5 pb-7 md:px-10">
+      <Container className="flex flex-wrap items-center gap-2.5 pb-7">
         <span
           className="mr-1.5"
           style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9098aa" }}
@@ -45,10 +46,10 @@ export function BlogFilterGrid({ posts }: { posts: Post[] }) {
             </button>
           );
         })}
-      </div>
+      </Container>
 
       {/* POST GRID */}
-      <div className="grid grid-cols-1 gap-[22px] px-5 pb-[72px] md:grid-cols-3 md:px-10">
+      <Container className="grid grid-cols-1 gap-[22px] pb-[72px] md:grid-cols-3">
         {shown.map((p) => (
           <Link
             key={p.id}
@@ -82,7 +83,7 @@ export function BlogFilterGrid({ posts }: { posts: Post[] }) {
             </div>
           </Link>
         ))}
-      </div>
+      </Container>
     </>
   );
 }

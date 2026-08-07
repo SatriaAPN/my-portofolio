@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Container } from "@/components/Container";
 import { SiteNav } from "@/components/SiteNav";
 import { getProjects } from "@/lib/api";
 import type { Project } from "@/lib/types";
@@ -24,7 +25,7 @@ export default async function ProjectsPage() {
       <SiteNav active="projects" variant="inner" />
 
       {/* HEADER */}
-      <div className="px-5 pt-[72px] pb-12 md:px-10">
+      <Container className="pt-[72px] pb-12">
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: "0.06em", color: "#4f5bd5", marginBottom: 16 }}>
           PROJECTS
         </div>
@@ -38,10 +39,10 @@ export default async function ProjectsPage() {
           From schema design to the pixels — the work I&rsquo;m proudest of, with
           the stack behind each piece.
         </p>
-      </div>
+      </Container>
 
       {/* PROJECT GRID */}
-      <div className="grid grid-cols-1 gap-[22px] px-5 pb-[72px] md:grid-cols-2 md:px-10">
+      <Container className="grid grid-cols-1 gap-[22px] pb-[72px] md:grid-cols-2">
         {projects.map((p) => (
           <div
             key={p.id}
@@ -87,14 +88,14 @@ export default async function ProjectsPage() {
             </div>
           </div>
         ))}
-      </div>
+      </Container>
 
       {/* FOOTER */}
-      <div className="px-5 pb-14 text-center md:px-10">
+      <Container className="pb-14 text-center">
         <div style={{ paddingTop: 24, borderTop: "1px solid #eceef2", fontFamily: "var(--font-mono)", fontSize: 12, color: "#9098aa" }}>
           © 2026 Satria Nusa · <Link href="/">satrianusa.dev</Link>
         </div>
-      </div>
+      </Container>
     </main>
   );
 }

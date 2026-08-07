@@ -56,6 +56,11 @@ type SiteContent struct {
 	Experience   []ExperienceItem `json:"experience"`
 	HeroImage    string           `json:"heroImage"`
 	ProjectImage string           `json:"projectImage"`
+	// Résumé PDF is uploaded/served separately (see /api/resume); the site
+	// payload only carries these light fields so the header can decide whether
+	// to show the button — never the base64 blob itself.
+	ResumeName string `json:"resumeName"` // original filename, "" when none uploaded
+	HasResume  bool   `json:"hasResume"`  // true when a résumé PDF is available
 }
 
 // AllSkills flattens every category into one ordered, de-duplicated list — the

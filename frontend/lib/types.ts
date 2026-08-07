@@ -48,6 +48,10 @@ export interface SiteContent {
   experience: ExperienceItem[];
   heroImage: string;
   projectImage: string;
+  // Résumé PDF is uploaded/served separately (see /api/resume); the site
+  // payload only carries these light fields, never the file itself.
+  resumeName?: string;
+  hasResume?: boolean;
 }
 
 export interface RankedProject {

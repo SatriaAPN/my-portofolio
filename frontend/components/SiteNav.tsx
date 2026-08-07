@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "./BrandMark";
+import { Container } from "./Container";
 
 type Active = "projects" | "writing" | "about" | null;
 
@@ -12,9 +13,11 @@ const links: { href: string; label: string; key: Active }[] = [
 export function SiteNav({
   active = null,
   variant = "home",
+  hasResume = false,
 }: {
   active?: Active;
   variant?: "home" | "inner";
+  hasResume?: boolean;
 }) {
   return (
     <header
@@ -26,7 +29,7 @@ export function SiteNav({
         borderColor: "#eceef2",
       }}
     >
-      <div className="flex items-center justify-between px-5 py-[18px] md:px-10">
+      <Container className="flex items-center justify-between py-[18px]">
         <Link href="/" aria-label="Home">
           <BrandMark />
         </Link>
@@ -57,13 +60,17 @@ export function SiteNav({
               >
                 ✦ Ask AI
               </Link>
-              <Link
-                href="/#contact"
-                className="text-[15px] font-medium text-white transition-colors hover:brightness-95"
-                style={{ background: "#4f5bd5", padding: "10px 20px", borderRadius: 10 }}
-              >
-                Resume
-              </Link>
+              {hasResume && (
+                <a
+                  href="/api/resume"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[15px] font-medium text-white transition-colors hover:brightness-95"
+                  style={{ background: "#4f5bd5", padding: "10px 20px", borderRadius: 10 }}
+                >
+                  Résumé
+                </a>
+              )}
             </>
           ) : (
             <Link
@@ -75,7 +82,7 @@ export function SiteNav({
             </Link>
           )}
         </div>
-      </div>
+      </Container>
     </header>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Container } from "@/components/Container";
 import { SiteNav } from "@/components/SiteNav";
 import { Reveal } from "@/components/Reveal";
 import { CompanyMark } from "@/components/CompanyMark";
@@ -31,10 +32,11 @@ export default async function HomePage() {
 
   return (
     <main id="top">
-      <SiteNav />
+      <SiteNav hasResume={site.hasResume} />
 
       {/* HERO */}
-      <section className="grid grid-cols-1 items-center gap-[50px] px-5 pt-[56px] pb-[48px] md:grid-cols-[1.5fr_1fr] md:px-10 md:pt-20 md:pb-[60px]">
+      <section>
+        <Container className="grid grid-cols-1 items-center gap-[50px] pt-[56px] pb-[48px] md:grid-cols-[1.5fr_1fr] md:pt-20 md:pb-[60px]">
         <div>
           <div
             className="mb-6 inline-flex items-center gap-2"
@@ -84,13 +86,25 @@ export default async function HomePage() {
             >
               See my work
             </Link>
-            <Link
-              href="#contact"
-              className="font-medium transition-colors hover:bg-[#f6f7fb]"
-              style={{ border: "1px solid #d9dce4", color: "#1a1c22", padding: "14px 26px", borderRadius: 12 }}
-            >
-              Download resume
-            </Link>
+            {site.hasResume ? (
+              <a
+                href="/api/resume"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium transition-colors hover:bg-[#f6f7fb]"
+                style={{ border: "1px solid #d9dce4", color: "#1a1c22", padding: "14px 26px", borderRadius: 12 }}
+              >
+                Download résumé
+              </a>
+            ) : (
+              <Link
+                href="#contact"
+                className="font-medium transition-colors hover:bg-[#f6f7fb]"
+                style={{ border: "1px solid #d9dce4", color: "#1a1c22", padding: "14px 26px", borderRadius: 12 }}
+              >
+                Get in touch
+              </Link>
+            )}
           </div>
         </div>
 
@@ -128,14 +142,13 @@ export default async function HomePage() {
             </span>
           )}
         </div>
+        </Container>
       </section>
 
       {/* STACK */}
       {(site.headline.length > 0 || site.skillGroups.some((g) => g.items.length > 0)) && (
-        <section
-          className="flex flex-col gap-5 px-5 py-7 md:px-10"
-          style={{ borderTop: "1px solid #eceef2", borderBottom: "1px solid #eceef2" }}
-        >
+        <section style={{ borderTop: "1px solid #eceef2", borderBottom: "1px solid #eceef2" }}>
+          <Container className="flex flex-col gap-5 py-7">
           {site.headline.length > 0 && (
             <div className="flex flex-col gap-2.5">
               <span style={stackLabel}>CORE STACK</span>
@@ -181,12 +194,14 @@ export default async function HomePage() {
                 </div>
               </div>
             ))}
+          </Container>
         </section>
       )}
 
       {/* WRITING */}
       <Reveal as="section">
-        <div id="writing" className="px-5 pt-[68px] pb-[60px] md:px-10">
+        <div id="writing" className="pt-[68px] pb-[60px]">
+          <Container>
           <div className="mb-[30px] flex items-baseline justify-between">
             <h2 className="section-h2">From the blog</h2>
             <Link href="/blog" className="text-[15px] font-medium">
@@ -214,6 +229,7 @@ export default async function HomePage() {
               </Link>
             ))}
           </div>
+          </Container>
         </div>
       </Reveal>
 
@@ -221,9 +237,10 @@ export default async function HomePage() {
       <Reveal as="section">
         <div
           id="about"
-          className="px-5 py-[60px] md:px-10"
+          className="py-[60px]"
           style={{ background: "#f6f7fb", borderTop: "1px solid #eceef2", borderBottom: "1px solid #eceef2" }}
         >
+          <Container>
           <h2 className="section-h2" style={{ marginBottom: 32 }}>
             Experience
           </h2>
@@ -269,12 +286,14 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
+          </Container>
         </div>
       </Reveal>
 
       {/* FEATURED PROJECTS */}
       <Reveal as="section">
-        <div id="work" className="px-5 pt-[68px] pb-[60px] md:px-10">
+        <div id="work" className="pt-[68px] pb-[60px]">
+          <Container>
           <div className="mb-8 flex items-baseline justify-between">
             <h2 className="section-h2">Featured projects</h2>
             <Link href="/projects" className="text-[15px] font-medium">
@@ -317,6 +336,7 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
+          </Container>
         </div>
       </Reveal>
 
@@ -324,10 +344,10 @@ export default async function HomePage() {
       <Reveal as="section">
         <div
           id="ask"
-          className="px-5 py-16 md:px-10"
+          className="py-16"
           style={{ background: "linear-gradient(135deg,#4f5bd5,#6a5be0)", color: "#fff" }}
         >
-          <div className="grid grid-cols-1 items-center gap-[50px] md:grid-cols-2">
+          <Container className="grid grid-cols-1 items-center gap-[50px] md:grid-cols-2">
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#c8ccf5", marginBottom: 16 }}>
                 ✦ ASK AI ABOUT ME
@@ -367,13 +387,14 @@ export default async function HomePage() {
                 Open the assistant →
               </div>
             </Link>
-          </div>
+          </Container>
         </div>
       </Reveal>
 
       {/* CONTACT / FOOTER */}
       <Reveal as="section">
-        <div id="contact" className="px-5 pt-[68px] pb-[56px] text-center md:px-10">
+        <div id="contact" className="pt-[68px] pb-[56px] text-center">
+          <Container>
           <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 42, lineHeight: 1.05, margin: "0 0 14px", letterSpacing: "-0.02em", textWrap: "balance" }}>
             Let&rsquo;s build something together.
           </h2>
@@ -398,6 +419,7 @@ export default async function HomePage() {
           <div style={{ marginTop: 52, paddingTop: 24, borderTop: "1px solid #eceef2", fontFamily: "var(--font-mono)", fontSize: 12, color: "#9098aa" }}>
             © 2026 Satria Nusa
           </div>
+          </Container>
         </div>
       </Reveal>
     </main>
