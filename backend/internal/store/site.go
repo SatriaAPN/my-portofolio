@@ -50,9 +50,9 @@ func normGroups(gs []models.SkillGroup) []models.SkillGroup {
 }
 
 func (s *Store) GetSite() (models.SiteContent, error) {
-	var skills, experience, hero, projectImg, resumeName string
-	err := s.db.QueryRow(`SELECT skills, experience, hero_image, project_image, resume_name FROM site_content WHERE id = 1`).
-		Scan(&skills, &experience, &hero, &projectImg, &resumeName)
+	var skills, experience, education, hero, projectImg, resumeName string
+	err := s.db.QueryRow(`SELECT skills, experience, education, hero_image, project_image, resume_name FROM site_content WHERE id = 1`).
+		Scan(&skills, &experience, &education, &hero, &projectImg, &resumeName)
 	if err != nil {
 		return models.SiteContent{}, err
 	}
@@ -73,13 +73,16 @@ func (s *Store) GetSite() (models.SiteContent, error) {
 			sc.Experience[i].Highlights = []string{}
 		}
 	}
+	if err := json.Unmarshal([]byte(education), &sc.Education); err != nil || sc.Education == nil {
+		sc.Education = []models.EducationItem{}
+	}
 	return sc, nil
 }
 
 func (s *Store) UpdateSite(sc models.SiteContent) (models.SiteContent, error) {
 	stored := storedSkills{Headline: nonNil(sc.Headline), Groups: normGroups(sc.SkillGroups)}
-	_, err := s.db.Exec(`UPDATE site_content SET skills=?, experience=?, hero_image=?, project_image=? WHERE id = 1`,
-		mustJSON(stored), mustJSON(sc.Experience), sc.HeroImage, sc.ProjectImage)
+	_, err := s.db.Exec(`UPDATE site_content SET skills=?, experience=?, education=?, hero_image=?, project_image=? WHERE id = 1`,
+		mustJSON(stored), mustJSON(sc.Experience), mustJSON(sc.Education), sc.HeroImage, sc.ProjectImage)
 	if err != nil {
 		return sc, err
 	}

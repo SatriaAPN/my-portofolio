@@ -51,6 +51,7 @@ func migrate(conn *sql.DB) error {
 		{"site_content", "resume_pdf", "TEXT NOT NULL DEFAULT ''"},
 		{"site_content", "resume_name", "TEXT NOT NULL DEFAULT ''"},
 		{"site_content", "resume_updated", "TEXT NOT NULL DEFAULT ''"},
+		{"site_content", "education", "TEXT NOT NULL DEFAULT '[]'"},
 		{"posts", "company", "TEXT NOT NULL DEFAULT ''"},
 		{"posts", "tags", "TEXT NOT NULL DEFAULT '[]'"},
 	}

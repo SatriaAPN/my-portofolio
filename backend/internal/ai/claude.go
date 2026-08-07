@@ -209,6 +209,34 @@ func groundingContext(g Grounding) string {
 			}
 		}
 	}
+	if len(g.Site.Education) > 0 {
+		b.WriteString("Education:\n")
+		for _, e := range g.Site.Education {
+			title := strings.TrimSpace(strings.TrimSpace(e.Degree) + " " + strings.TrimSpace(e.Field))
+			line := "- "
+			if title != "" {
+				line += title
+			}
+			if e.School != "" {
+				if title != "" {
+					line += " — " + e.School
+				} else {
+					line += e.School
+				}
+			}
+			if e.Location != "" {
+				line += " (" + e.Location + ")"
+			}
+			if e.Period != "" {
+				line += ", " + e.Period
+			}
+			b.WriteString(line + ".")
+			if e.Note != "" {
+				b.WriteString(" " + e.Note)
+			}
+			b.WriteString("\n")
+		}
+	}
 	if len(g.Projects) > 0 {
 		b.WriteString("Projects:\n")
 		for _, p := range g.Projects {

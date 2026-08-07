@@ -58,6 +58,28 @@ export function SiteSection({ site, onRefresh }: { site: SiteContent; onRefresh:
   const removeExp = (i: number) =>
     save({ ...sc, experience: sc.experience.filter((_, j) => j !== i) }, true);
 
+  const setEdu = (i: number, patch: Partial<SiteContent["education"][number]>, immediate = false) =>
+    save({ ...sc, education: sc.education.map((x, j) => (j === i ? { ...x, ...patch } : x)) }, immediate);
+
+  const addEdu = () =>
+    save({ ...sc, education: [...sc.education, { school: "", degree: "", field: "", period: "", location: "", logo: "", note: "" }] }, true);
+
+  const removeEdu = (i: number) =>
+    save({ ...sc, education: sc.education.filter((_, j) => j !== i) }, true);
+
+  const onEduLogo = async (i: number, ev: React.ChangeEvent<HTMLInputElement>) => {
+    const f = ev.target.files?.[0];
+    ev.target.value = "";
+    if (!f) return;
+    try {
+      const url = await resizeImageToDataURL(f, 256);
+      setEdu(i, { logo: url }, true);
+      toast("Logo updated");
+    } catch {
+      toast("Could not process image");
+    }
+  };
+
   const onHeroFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     e.target.value = "";
@@ -264,6 +286,105 @@ export function SiteSection({ site, onRefresh }: { site: SiteContent; onRefresh:
             </div>
             <button
               onClick={() => removeExp(i)}
+              title="Remove entry"
+              className="transition-colors hover:text-[#b3383c]"
+              style={{ background: "transparent", border: "none", color: "#9098aa", fontSize: 17, cursor: "pointer", padding: 4, lineHeight: 1, marginTop: 4 }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Education */}
+      <div style={card}>
+        <div className="flex items-center justify-between" style={{ padding: "18px 22px", borderBottom: "1px solid #eceef2" }}>
+          <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 16 }}>Education</span>
+          <button
+            onClick={addEdu}
+            className="transition-colors hover:bg-[#e3e6fa]"
+            style={{ background: "#eef0fb", color: "#4f5bd5", border: "none", borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+          >
+            + Add entry
+          </button>
+        </div>
+        {sc.education.map((e, i) => (
+          <div
+            key={i}
+            className="grid items-start gap-3.5"
+            style={{ gridTemplateColumns: "150px 1fr 30px", padding: "18px 22px", borderBottom: "1px solid #f2f3f8" }}
+          >
+            <input
+              value={e.period}
+              onChange={(ev) => setEdu(i, { period: ev.target.value })}
+              placeholder="2018 — 2022"
+              className="focus:border-primary focus:outline-none"
+              style={{ ...inputBase, fontFamily: "var(--font-mono)", fontSize: 12, color: "#4f5bd5" }}
+            />
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input
+                  value={e.degree}
+                  onChange={(ev) => setEdu(i, { degree: ev.target.value })}
+                  placeholder="B.Sc."
+                  className="focus:border-primary focus:outline-none"
+                  style={{ ...inputBase, width: 120, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15, color: "#1a1c22" }}
+                />
+                <input
+                  value={e.field}
+                  onChange={(ev) => setEdu(i, { field: ev.target.value })}
+                  placeholder="Computer Science"
+                  className="flex-1 focus:border-primary focus:outline-none"
+                  style={{ ...inputBase, fontSize: 14, fontFamily: "var(--font-sans)", color: "#3a3d47" }}
+                />
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={e.school}
+                  onChange={(ev) => setEdu(i, { school: ev.target.value })}
+                  placeholder="University"
+                  className="flex-1 focus:border-primary focus:outline-none"
+                  style={{ ...inputBase, fontSize: 14, fontFamily: "var(--font-sans)", color: "#3a3d47" }}
+                />
+                <input
+                  value={e.location}
+                  onChange={(ev) => setEdu(i, { location: ev.target.value })}
+                  placeholder="Location"
+                  className="focus:border-primary focus:outline-none"
+                  style={{ ...inputBase, width: 150, fontSize: 14, fontFamily: "var(--font-sans)", color: "#3a3d47" }}
+                />
+              </div>
+              <textarea
+                value={e.note}
+                onChange={(ev) => setEdu(i, { note: ev.target.value })}
+                rows={2}
+                placeholder="Optional — honors, thesis, relevant coursework…"
+                className="focus:border-primary focus:outline-none"
+                style={{ ...inputBase, fontSize: 13.5, fontFamily: "var(--font-sans)", color: "#54596a", resize: "vertical", lineHeight: 1.5 }}
+              />
+
+              <div className="flex items-center gap-2">
+                <CompanyMark company={e.school} logo={e.logo} size={30} radius={8} />
+                <label
+                  className="cursor-pointer transition-colors hover:bg-[#e3e6fa]"
+                  style={{ background: "#eef0fb", color: "#4f5bd5", borderRadius: 9, padding: "6px 12px", fontSize: 12.5, fontWeight: 600 }}
+                >
+                  {e.logo ? "Replace logo" : "University logo"}
+                  <input type="file" accept="image/*" onChange={(ev) => onEduLogo(i, ev)} className="hidden" />
+                </label>
+                {e.logo && (
+                  <button
+                    onClick={() => setEdu(i, { logo: "" }, true)}
+                    className="transition-colors hover:text-[#b3383c]"
+                    style={{ background: "transparent", border: "none", color: "#9098aa", fontSize: 12.5, cursor: "pointer", padding: "6px 5px", fontFamily: "var(--font-sans)" }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => removeEdu(i)}
               title="Remove entry"
               className="transition-colors hover:text-[#b3383c]"
               style={{ background: "transparent", border: "none", color: "#9098aa", fontSize: 17, cursor: "pointer", padding: 4, lineHeight: 1, marginTop: 4 }}

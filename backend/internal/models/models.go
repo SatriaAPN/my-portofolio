@@ -43,6 +43,18 @@ type ExperienceItem struct {
 	Highlights []string `json:"highlights"`
 }
 
+// EducationItem is one entry in the education list — a lightweight credential
+// (degree/school/period), shown on the site and fed to the CV generator.
+type EducationItem struct {
+	School   string `json:"school"`
+	Degree   string `json:"degree"`   // e.g. "B.Sc."
+	Field    string `json:"field"`    // e.g. "Computer Science"
+	Period   string `json:"period"`   // e.g. "2018 — 2022"
+	Location string `json:"location"`
+	Logo     string `json:"logo"` // dataURL/URL; empty → monogram fallback in UI
+	Note     string `json:"note"` // optional: honors, thesis, relevant coursework
+}
+
 // SkillGroup is one labeled category of skills (e.g. "Languages",
 // "Databases"). Grouping is a presentation layer; the CV matcher reasons over
 // the flattened token list from SiteContent.AllSkills.
@@ -56,6 +68,7 @@ type SiteContent struct {
 	Headline     []string         `json:"headline"`    // 3-4 top strengths, shown first on the site + CV
 	SkillGroups  []SkillGroup     `json:"skillGroups"` // skills grouped by category
 	Experience   []ExperienceItem `json:"experience"`
+	Education    []EducationItem  `json:"education"`
 	HeroImage    string           `json:"heroImage"`
 	ProjectImage string           `json:"projectImage"`
 	// Résumé PDF is uploaded/served separately (see /api/resume); the site

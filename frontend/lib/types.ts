@@ -44,10 +44,21 @@ export interface SkillGroup {
   items: string[];
 }
 
+export interface EducationItem {
+  school: string;
+  degree: string; // e.g. "B.Sc."
+  field: string; // e.g. "Computer Science"
+  period: string; // e.g. "2018 — 2022"
+  location: string;
+  logo: string; // dataURL/URL; empty → monogram fallback in UI
+  note: string; // optional: honors, thesis, relevant coursework
+}
+
 export interface SiteContent {
   headline: string[];
   skillGroups: SkillGroup[];
   experience: ExperienceItem[];
+  education: EducationItem[];
   heroImage: string;
   projectImage: string;
   // Résumé PDF is uploaded/served separately (see /api/resume); the site

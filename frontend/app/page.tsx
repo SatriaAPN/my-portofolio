@@ -18,7 +18,7 @@ const stackLabel: React.CSSProperties = {
 };
 
 export default async function HomePage() {
-  let site: SiteContent = { headline: [], skillGroups: [], experience: [], heroImage: "", projectImage: "" };
+  let site: SiteContent = { headline: [], skillGroups: [], experience: [], education: [], heroImage: "", projectImage: "" };
   let posts: Post[] = [];
   let projects: Project[] = [];
   try {
@@ -286,6 +286,45 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
+
+          {site.education.length > 0 && (
+            <div style={{ marginTop: 44 }}>
+              <h2 className="section-h2" style={{ marginBottom: 24 }}>
+                Education
+              </h2>
+              <div className="flex flex-col gap-3">
+                {site.education.map((e, i) => (
+                  <div
+                    key={i}
+                    className="grid grid-cols-1 items-start gap-2 md:grid-cols-[160px_1fr]"
+                    style={{ background: "#fff", border: "1px solid #eceef2", borderRadius: 14, padding: "20px 28px" }}
+                  >
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#4f5bd5", paddingTop: 3 }}>
+                      {e.period}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <CompanyMark company={e.school} logo={e.logo} size={38} radius={9} />
+                        <div>
+                          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, margin: 0, lineHeight: 1.2 }}>
+                            {[e.degree, e.field].filter(Boolean).join(" ")}
+                          </h3>
+                          {(e.school || e.location) && (
+                            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "#54596a", marginTop: 4 }}>
+                              {[e.school, e.location].filter(Boolean).join(" · ")}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {e.note && (
+                        <p style={{ color: "#54596a", margin: "12px 0 0", fontSize: 14 }}>{e.note}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           </Container>
         </div>
       </Reveal>

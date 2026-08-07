@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS site_content (
     id             INTEGER PRIMARY KEY CHECK (id = 1),
     skills         TEXT NOT NULL DEFAULT '{}', -- JSON {headline:[], groups:[{category,items[]}]}; legacy flat [] still read
     experience     TEXT NOT NULL DEFAULT '[]',
+    education      TEXT NOT NULL DEFAULT '[]', -- JSON array of {school,degree,field,period,location,note}
     hero_image     TEXT NOT NULL DEFAULT '',
     project_image  TEXT NOT NULL DEFAULT '',
     resume_pdf     TEXT NOT NULL DEFAULT '', -- base64 (no data: prefix) of the uploaded résumé PDF
