@@ -41,10 +41,13 @@ function EditorInner() {
   const [excerpt, setExcerpt] = useState("");
   const [category, setCategory] = useState<Category>("Performance");
   const [company, setCompany] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagDraft, setTagDraft] = useState("");
   const [status, setStatus] = useState<PostStatus>("DRAFT");
   const [words, setWords] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [companies, setCompanies] = useState<string[]>([]);
+  const [allSkills, setAllSkills] = useState<string[]>([]);
 
   useEffect(() => {
     if (!postId) {
@@ -57,6 +60,7 @@ function EditorInner() {
         setExcerpt(p.excerpt);
         setCategory(p.category);
         setCompany(p.company || "");
+        setTags(p.tags || []);
         setStatus(p.status);
         if (bodyRef.current) bodyRef.current.innerHTML = p.body;
         setWords(countWords(p.body));
@@ -70,19 +74,20 @@ function EditorInner() {
   useEffect(() => {
     getSite()
       .then((s) => {
-        const seen = new Set<string>();
-        const out: string[] = [];
-        for (const x of s.experience) {
-          const c = x.company.trim();
-          if (c && !seen.has(c.toLowerCase())) {
-            seen.add(c.toLowerCase());
-            out.push(c);
-          }
-        }
-        setCompanies(out);
+        setCompanies(dedupe(s.experience.map((x) => x.company)));
+        setAllSkills(dedupe(s.skillGroups.flatMap((g) => g.items)));
       })
       .catch(() => {});
   }, []);
+
+  const addTag = (raw: string) => {
+    const v = raw.trim();
+    if (!v) return;
+    setTagDraft("");
+    setTags((cur) => (cur.some((t) => t.toLowerCase() === v.toLowerCase()) ? cur : [...cur, v]));
+  };
+  const removeTag = (i: number) => setTags((cur) => cur.filter((_, j) => j !== i));
+  const skillSuggestions = allSkills.filter((s) => !tags.some((t) => t.toLowerCase() === s.toLowerCase()));
 
   const applyFmt = (type: string) => {
     const el = bodyRef.current;
@@ -119,6 +124,7 @@ function EditorInner() {
       body,
       category,
       company: company.trim(),
+      tags,
       status: nextStatus,
       readMin: Math.max(1, Math.round(w / 200)),
       date: nextStatus === "LIVE" ? today : "—",
@@ -280,6 +286,77 @@ function EditorInner() {
               </div>
             </div>
             <div style={rail}>
+              <div style={railLabel}>TAGS</div>
+              {tags.length > 0 && (
+                <div className="mb-2.5 flex flex-wrap gap-1.5">
+                  {tags.map((t, i) => (
+                    <span
+                      key={`${t}-${i}`}
+                      className="inline-flex items-center gap-1.5"
+                      style={{ background: "#eef0fb", color: "#4f5bd5", padding: "5px 6px 5px 12px", borderRadius: 999, fontSize: 13, fontWeight: 500 }}
+                    >
+                      {t}
+                      <button
+                        onClick={() => removeTag(i)}
+                        title="Remove tag"
+                        className="flex items-center justify-center transition-colors hover:bg-[#dfe3fb]"
+                        style={{ background: "rgba(79,91,213,0.15)", border: "none", color: "#4f5bd5", width: 18, height: 18, borderRadius: "50%", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0 }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  addTag(tagDraft);
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  value={tagDraft}
+                  onChange={(e) => setTagDraft(e.target.value)}
+                  placeholder="Add a tag…"
+                  className="flex-1 focus:border-primary focus:outline-none"
+                  style={{ border: "1px solid #e2e5ee", borderRadius: 11, padding: "9px 12px", fontSize: 14, fontFamily: "var(--font-sans)", color: "#1a1c22", background: "#fff", minWidth: 0 }}
+                />
+                <button
+                  type="submit"
+                  className="transition-colors hover:bg-[#e3e6fa]"
+                  style={{ background: "#eef0fb", color: "#4f5bd5", border: "none", borderRadius: 11, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+                >
+                  Add
+                </button>
+              </form>
+              {skillSuggestions.length > 0 && (
+                <div className="mt-2.5 flex flex-col gap-1.5">
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, letterSpacing: "0.05em", color: "#9098aa" }}>
+                    FROM YOUR SKILLS
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {skillSuggestions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => addTag(s)}
+                        title={`Add ${s}`}
+                        className="transition-colors hover:bg-[#f2f3f8]"
+                        style={{ background: "#fff", color: "#54596a", border: "1px solid #e2e5ee", borderRadius: 999, padding: "5px 11px", fontSize: 12.5, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+                      >
+                        + {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: "#9098aa", marginTop: 9, lineHeight: 1.5 }}>
+                Shown as pills on the blog and used as skill evidence by the CV
+                generator. Pick from your Skills or type any (e.g. cronjob).
+              </div>
+            </div>
+            <div style={rail}>
               <div style={railLabel}>COVER</div>
               <div
                 className="flex items-center justify-center text-center"
@@ -298,6 +375,20 @@ function EditorInner() {
 function countWords(html: string) {
   const text = html.replace(/<[^>]+>/g, " ").trim();
   return text ? text.split(/\s+/).filter(Boolean).length : 0;
+}
+
+// Trim, drop empties, and de-duplicate case-insensitively, preserving order.
+function dedupe(values: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of values) {
+    const t = v.trim();
+    if (t && !seen.has(t.toLowerCase())) {
+      seen.add(t.toLowerCase());
+      out.push(t);
+    }
+  }
+  return out;
 }
 
 const rail: React.CSSProperties = { background: "#fff", border: "1px solid #eceef2", borderRadius: 14, padding: 20 };

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Container } from "@/components/Container";
 import { SiteNav } from "@/components/SiteNav";
 import { BlogFilterGrid } from "@/components/BlogFilterGrid";
+import { PostTags } from "@/components/PostTags";
 import { getLivePosts } from "@/lib/api";
 import type { Post } from "@/lib/types";
 
@@ -84,6 +85,11 @@ export default async function BlogPage() {
               <p style={{ color: "#54596a", margin: "0 0 18px", fontSize: 16 }}>
                 {featured.excerpt}
               </p>
+              {featured.tags.length > 0 && (
+                <div style={{ marginBottom: 18 }}>
+                  <PostTags tags={featured.tags} />
+                </div>
+              )}
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9098aa" }}>
                 {`${featured.date} · ${featured.readMin} MIN`.toUpperCase()}
               </div>

@@ -4,19 +4,20 @@ import "strings"
 
 // Post maps to the blog-data.js Post store.
 type Post struct {
-	ID        int64  `json:"id"`
-	Title     string `json:"title"`
-	Slug      string `json:"slug"`
-	Category  string `json:"category"` // Performance|Architecture|Databases|Testing
-	Company   string `json:"company"`  // optional: links post to an experience entry for the CV generator
-	Status    string `json:"status"`   // LIVE|DRAFT
-	Date      string `json:"date"`     // e.g. "Jul 12, 2026"
-	Views     string `json:"views"`
-	ReadMin   int    `json:"readMin"`
-	Excerpt   string `json:"excerpt"`
-	Body      string `json:"body"` // rich-text HTML
-	Position  int    `json:"-"`
-	CreatedAt string `json:"createdAt"`
+	ID        int64    `json:"id"`
+	Title     string   `json:"title"`
+	Slug      string   `json:"slug"`
+	Category  string   `json:"category"` // Performance|Architecture|Databases|Testing
+	Company   string   `json:"company"`  // optional: links post to an experience entry for the CV generator
+	Tags      []string `json:"tags"`     // tags shown on the blog + used as skill evidence by the CV generator
+	Status    string   `json:"status"`   // LIVE|DRAFT
+	Date      string   `json:"date"`     // e.g. "Jul 12, 2026"
+	Views     string   `json:"views"`
+	ReadMin   int      `json:"readMin"`
+	Excerpt   string   `json:"excerpt"`
+	Body      string   `json:"body"` // rich-text HTML
+	Position  int      `json:"-"`
+	CreatedAt string   `json:"createdAt"`
 }
 
 // Project maps to the projects-data.js Project store.

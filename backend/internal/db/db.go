@@ -40,12 +40,19 @@ func Open(path string) (*sql.DB, error) {
 // already present, so running it on a fresh DB (schema.sql already added them)
 // or repeatedly is safe.
 func migrate(conn *sql.DB) error {
+	// The blog "tags" field was briefly named "tech"; carry the data over on DBs
+	// created in that window. Runs before the add-column steps below.
+	if err := renameColumn(conn, "posts", "tech", "tags"); err != nil {
+		return err
+	}
+
 	type addCol struct{ table, column, def string }
 	steps := []addCol{
 		{"site_content", "resume_pdf", "TEXT NOT NULL DEFAULT ''"},
 		{"site_content", "resume_name", "TEXT NOT NULL DEFAULT ''"},
 		{"site_content", "resume_updated", "TEXT NOT NULL DEFAULT ''"},
 		{"posts", "company", "TEXT NOT NULL DEFAULT ''"},
+		{"posts", "tags", "TEXT NOT NULL DEFAULT '[]'"},
 	}
 	for _, s := range steps {
 		has, err := columnExists(conn, s.table, s.column)
@@ -57,6 +64,25 @@ func migrate(conn *sql.DB) error {
 		}
 		if _, err := conn.Exec("ALTER TABLE " + s.table + " ADD COLUMN " + s.column + " " + s.def); err != nil {
 			return fmt.Errorf("add %s.%s: %w", s.table, s.column, err)
+		}
+	}
+	return nil
+}
+
+// renameColumn renames table.from to table.to only when `from` exists and `to`
+// does not, so it's a no-op on fresh DBs and safe to run repeatedly.
+func renameColumn(conn *sql.DB, table, from, to string) error {
+	hasFrom, err := columnExists(conn, table, from)
+	if err != nil {
+		return err
+	}
+	hasTo, err := columnExists(conn, table, to)
+	if err != nil {
+		return err
+	}
+	if hasFrom && !hasTo {
+		if _, err := conn.Exec("ALTER TABLE " + table + " RENAME COLUMN " + from + " TO " + to); err != nil {
+			return fmt.Errorf("rename %s.%s to %s: %w", table, from, to, err)
 		}
 	}
 	return nil

@@ -9,6 +9,7 @@ export interface Post {
   slug: string;
   category: Category;
   company: string; // optional tag linking the post to an experience entry (CV generator)
+  tags: string[]; // tags shown on the blog + used as skill evidence by the CV generator
   status: PostStatus;
   date: string;
   views: string;

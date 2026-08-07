@@ -134,6 +134,28 @@ func companyPosts(posts []models.Post, company string) []models.Post {
 	return out
 }
 
+// liveTags returns the de-duplicated tags across all LIVE posts, preserving
+// first-seen order. These are surfaced to the CV generator as concrete
+// evidence the candidate has hands-on experience with each.
+func liveTags(posts []models.Post) []string {
+	seen := make(map[string]bool)
+	var out []string
+	for _, p := range posts {
+		if p.Status != "LIVE" {
+			continue
+		}
+		for _, t := range p.Tags {
+			key := strings.ToLower(strings.TrimSpace(t))
+			if key == "" || seen[key] {
+				continue
+			}
+			seen[key] = true
+			out = append(out, strings.TrimSpace(t))
+		}
+	}
+	return out
+}
+
 // groundingContext renders the live site data as a compact profile the model
 // reasons over. Because it reads the real store, answers reflect admin edits.
 func groundingContext(g Grounding) string {
@@ -180,6 +202,9 @@ func groundingContext(g Grounding) string {
 				if p.Excerpt != "" {
 					b.WriteString(" — " + p.Excerpt)
 				}
+				if len(p.Tags) > 0 {
+					b.WriteString(" [" + strings.Join(p.Tags, ", ") + "]")
+				}
 				b.WriteString("\n")
 			}
 		}
@@ -193,6 +218,9 @@ func groundingContext(g Grounding) string {
 	live := g.LivePosts()
 	if live > 0 {
 		b.WriteString(fmt.Sprintf("Writing: %d published blog posts on performance, architecture, and databases.\n", live))
+		if tags := liveTags(g.Posts); len(tags) > 0 {
+			b.WriteString("Topics written about on the blog (first-hand evidence of these skills): " + strings.Join(tags, ", ") + ".\n")
+		}
 	}
 	b.WriteString("Availability: open to new roles, remote or hybrid. Contact: satria@email.com.\n")
 	return b.String()

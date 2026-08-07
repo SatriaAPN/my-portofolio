@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { ReadingProgress } from "@/components/ReadingProgress";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { PostTags } from "@/components/PostTags";
 import { getLivePosts, getPost } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import type { Post } from "@/lib/types";
@@ -73,7 +74,12 @@ export default async function BlogPostPage({
         >
           {post.title}
         </h1>
-        <p style={{ fontSize: 19, color: "#54596a", margin: "0 0 28px" }}>{post.excerpt}</p>
+        <p style={{ fontSize: 19, color: "#54596a", margin: "0 0 22px" }}>{post.excerpt}</p>
+        {post.tags.length > 0 && (
+          <div style={{ marginBottom: 26 }}>
+            <PostTags tags={post.tags} size="md" />
+          </div>
+        )}
         <div
           className="flex items-center gap-3.5"
           style={{ paddingBottom: 34, borderBottom: "1px solid #eceef2" }}

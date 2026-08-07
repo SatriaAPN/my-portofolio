@@ -10,12 +10,14 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-const postCols = `id, title, slug, category, company, status, date, views, read_min, excerpt, body, position, created_at`
+const postCols = `id, title, slug, category, company, tags, status, date, views, read_min, excerpt, body, position, created_at`
 
 func scanPost(s interface{ Scan(...any) error }) (models.Post, error) {
 	var p models.Post
-	err := s.Scan(&p.ID, &p.Title, &p.Slug, &p.Category, &p.Company, &p.Status, &p.Date,
+	var tags string
+	err := s.Scan(&p.ID, &p.Title, &p.Slug, &p.Category, &p.Company, &tags, &p.Status, &p.Date,
 		&p.Views, &p.ReadMin, &p.Excerpt, &p.Body, &p.Position, &p.CreatedAt)
+	p.Tags = jsonArray(tags)
 	return p, err
 }
 
@@ -80,9 +82,9 @@ func (s *Store) CreatePost(p models.Post) (models.Post, error) {
 		return p, err
 	}
 	res, err := s.db.Exec(`INSERT INTO posts
-		(title, slug, category, company, status, date, views, read_min, excerpt, body, position)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-		p.Title, p.Slug, p.Category, p.Company, p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, p.Body)
+		(title, slug, category, company, tags, status, date, views, read_min, excerpt, body, position)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+		p.Title, p.Slug, p.Category, p.Company, mustJSON(nonNil(p.Tags)), p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, p.Body)
 	if err != nil {
 		return p, err
 	}
@@ -95,9 +97,9 @@ func (s *Store) UpdatePost(p models.Post) (models.Post, error) {
 		p.Slug = util.Slugify(p.Title)
 	}
 	p.Slug = s.uniqueSlug(p.Slug, p.ID)
-	_, err := s.db.Exec(`UPDATE posts SET title=?, slug=?, category=?, company=?, status=?, date=?,
+	_, err := s.db.Exec(`UPDATE posts SET title=?, slug=?, category=?, company=?, tags=?, status=?, date=?,
 		views=?, read_min=?, excerpt=?, body=? WHERE id=?`,
-		p.Title, p.Slug, p.Category, p.Company, p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, p.Body, p.ID)
+		p.Title, p.Slug, p.Category, p.Company, mustJSON(nonNil(p.Tags)), p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, p.Body, p.ID)
 	if err != nil {
 		return p, err
 	}
