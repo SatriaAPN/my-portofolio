@@ -8,6 +8,7 @@ type Post struct {
 	Title     string `json:"title"`
 	Slug      string `json:"slug"`
 	Category  string `json:"category"` // Performance|Architecture|Databases|Testing
+	Company   string `json:"company"`  // optional: links post to an experience entry for the CV generator
 	Status    string `json:"status"`   // LIVE|DRAFT
 	Date      string `json:"date"`     // e.g. "Jul 12, 2026"
 	Views     string `json:"views"`

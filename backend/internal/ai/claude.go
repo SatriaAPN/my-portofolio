@@ -117,6 +117,23 @@ func companySuffix(company string) string {
 	return " at " + company
 }
 
+// companyPosts returns the LIVE posts tagged with the given company (matched
+// case-insensitively). Untagged posts and drafts are excluded, so only
+// published, deliberately-linked writing feeds into a role's experience.
+func companyPosts(posts []models.Post, company string) []models.Post {
+	company = strings.TrimSpace(company)
+	if company == "" {
+		return nil
+	}
+	var out []models.Post
+	for _, p := range posts {
+		if p.Status == "LIVE" && strings.EqualFold(strings.TrimSpace(p.Company), company) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 // groundingContext renders the live site data as a compact profile the model
 // reasons over. Because it reads the real store, answers reflect admin edits.
 func groundingContext(g Grounding) string {
@@ -154,6 +171,16 @@ func groundingContext(g Grounding) string {
 			b.WriteString("\n")
 			for _, h := range x.Highlights {
 				b.WriteString("    • " + h + "\n")
+			}
+			// Blog posts the admin tagged with this company become extra,
+			// first-hand evidence for this role — so the tailored summary can
+			// draw concrete experience points from what he actually wrote about.
+			for _, p := range companyPosts(g.Posts, x.Company) {
+				b.WriteString("    • Wrote about this work: “" + p.Title + "”")
+				if p.Excerpt != "" {
+					b.WriteString(" — " + p.Excerpt)
+				}
+				b.WriteString("\n")
 			}
 		}
 	}

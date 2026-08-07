@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS posts (
     title      TEXT NOT NULL,
     slug       TEXT NOT NULL DEFAULT '',
     category   TEXT NOT NULL DEFAULT 'Architecture', -- Performance|Architecture|Databases|Testing
+    company    TEXT NOT NULL DEFAULT '',              -- optional: links post to an experience entry (site_content.experience[].company) for the CV generator
     status     TEXT NOT NULL DEFAULT 'DRAFT',         -- LIVE|DRAFT
     date       TEXT NOT NULL DEFAULT '',              -- e.g. 'Jul 12, 2026'
     views      TEXT NOT NULL DEFAULT '—',

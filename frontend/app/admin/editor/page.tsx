@@ -6,7 +6,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { AdminGate } from "@/components/admin/AdminGate";
 import { ToastProvider, useToast } from "@/components/Toast";
 import { Badge } from "@/components/Badge";
-import { adminCreatePost, adminGetPost, adminUpdatePost } from "@/lib/api";
+import { adminCreatePost, adminGetPost, adminUpdatePost, getSite } from "@/lib/api";
 import type { Category, PostStatus } from "@/lib/types";
 
 const CATEGORIES: Category[] = ["Performance", "Architecture", "Databases", "Testing"];
@@ -40,9 +40,11 @@ function EditorInner() {
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [category, setCategory] = useState<Category>("Performance");
+  const [company, setCompany] = useState("");
   const [status, setStatus] = useState<PostStatus>("DRAFT");
   const [words, setWords] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [companies, setCompanies] = useState<string[]>([]);
 
   useEffect(() => {
     if (!postId) {
@@ -54,6 +56,7 @@ function EditorInner() {
         setTitle(p.title);
         setExcerpt(p.excerpt);
         setCategory(p.category);
+        setCompany(p.company || "");
         setStatus(p.status);
         if (bodyRef.current) bodyRef.current.innerHTML = p.body;
         setWords(countWords(p.body));
@@ -61,6 +64,25 @@ function EditorInner() {
       .catch(() => toast("Could not load post"))
       .finally(() => setLoaded(true));
   }, [postId, toast]);
+
+  // Suggest the companies already in the Experience section, so a post links
+  // cleanly to an experience entry for the tailored CV generator.
+  useEffect(() => {
+    getSite()
+      .then((s) => {
+        const seen = new Set<string>();
+        const out: string[] = [];
+        for (const x of s.experience) {
+          const c = x.company.trim();
+          if (c && !seen.has(c.toLowerCase())) {
+            seen.add(c.toLowerCase());
+            out.push(c);
+          }
+        }
+        setCompanies(out);
+      })
+      .catch(() => {});
+  }, []);
 
   const applyFmt = (type: string) => {
     const el = bodyRef.current;
@@ -96,6 +118,7 @@ function EditorInner() {
       excerpt,
       body,
       category,
+      company: company.trim(),
       status: nextStatus,
       readMin: Math.max(1, Math.round(w / 200)),
       date: nextStatus === "LIVE" ? today : "—",
@@ -113,6 +136,12 @@ function EditorInner() {
 
   const slug = slugify(title);
   const readMeta = `${words} words`;
+  // Options are the Experience companies; keep any already-saved value that is
+  // no longer in that list so editing an old post never silently drops its tag.
+  const companyOptions =
+    company && !companies.some((c) => c.toLowerCase() === company.toLowerCase())
+      ? [...companies, company]
+      : companies;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f6f7fb" }}>
@@ -229,6 +258,26 @@ function EditorInner() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div style={rail}>
+              <div style={railLabel}>COMPANY</div>
+              <select
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                style={{ width: "100%", border: "1px solid #e2e5ee", borderRadius: 11, padding: "11px 12px", fontSize: 14, fontFamily: "var(--font-sans)", color: company ? "#1a1c22" : "#9098aa", background: "#fff", cursor: "pointer" }}
+              >
+                <option value="">No company</option>
+                {companyOptions.map((c) => (
+                  <option key={c} value={c} style={{ color: "#1a1c22" }}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <div style={{ fontSize: 12, color: "#9098aa", marginTop: 9, lineHeight: 1.5 }}>
+                Optional. Pick a company from your Experience so the AI CV
+                generator can turn this post into an experience point. Not shown
+                on the blog.
+              </div>
             </div>
             <div style={rail}>
               <div style={railLabel}>COVER</div>

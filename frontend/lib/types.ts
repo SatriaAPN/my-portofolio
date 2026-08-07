@@ -8,6 +8,7 @@ export interface Post {
   title: string;
   slug: string;
   category: Category;
+  company: string; // optional tag linking the post to an experience entry (CV generator)
   status: PostStatus;
   date: string;
   views: string;
