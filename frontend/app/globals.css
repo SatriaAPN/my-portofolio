@@ -275,6 +275,26 @@
   max-width: 100%;
   border-radius: 12px;
 }
+/* Sequence-diagram add-on (<figure data-uml> with the rendered SVG inside). */
+.article figure[data-uml] {
+  margin: 1.9em auto;
+  max-width: 100%;
+  overflow-x: auto;
+  text-align: center;
+}
+.article figure[data-uml] svg {
+  display: inline-block;
+  height: auto;
+}
+/* In the editor the figure is an atomic block — click it to reopen the builder. */
+[data-rte] figure[data-uml] {
+  cursor: pointer;
+  border-radius: 14px;
+  transition: box-shadow 0.15s ease;
+}
+[data-rte] figure[data-uml]:hover {
+  box-shadow: 0 0 0 2px rgba(79, 91, 213, 0.45);
+}
 
 /* Rich-text editor placeholder (empty contentEditable). */
 [data-rte]:empty::before {

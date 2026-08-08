@@ -6,7 +6,9 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { AdminGate } from "@/components/admin/AdminGate";
 import { ToastProvider, useToast } from "@/components/Toast";
 import { Badge } from "@/components/Badge";
+import { UmlDialog } from "@/components/admin/UmlDialog";
 import { adminCreatePost, adminGetPost, adminUpdatePost, getSite } from "@/lib/api";
+import { parseUmlFigure, umlFigureHtml, type UmlStep } from "@/lib/uml";
 import type { PostStatus } from "@/lib/types";
 
 function slugify(s: string) {
@@ -45,6 +47,11 @@ function EditorInner() {
   const [loaded, setLoaded] = useState(false);
   const [companies, setCompanies] = useState<string[]>([]);
   const [allSkills, setAllSkills] = useState<string[]>([]);
+  // Sequence-diagram add-on: null = closed; el = the <figure> being edited
+  // (null when inserting a new one). The caret is saved when the dialog opens
+  // because the editor loses focus to the dialog's inputs.
+  const [uml, setUml] = useState<{ steps: UmlStep[]; title: string; el: HTMLElement | null } | null>(null);
+  const savedRangeRef = useRef<Range | null>(null);
 
   useEffect(() => {
     if (!postId) {
@@ -104,6 +111,54 @@ function EditorInner() {
       if (url) cmd("createLink", false, url);
     }
     setWords(countWords(el.innerHTML));
+  };
+
+  const openUml = () => {
+    const el = bodyRef.current;
+    const sel = window.getSelection();
+    savedRangeRef.current =
+      el && sel && sel.rangeCount > 0 && el.contains(sel.getRangeAt(0).commonAncestorContainer)
+        ? sel.getRangeAt(0).cloneRange()
+        : null;
+    setUml({ steps: [], title: "", el: null });
+  };
+
+  // Clicking an existing diagram re-opens the builder pre-filled.
+  const onBodyClick = (e: React.MouseEvent) => {
+    const fig = (e.target as HTMLElement).closest?.("figure[data-uml]") as HTMLElement | null;
+    if (!fig || !bodyRef.current?.contains(fig)) return;
+    const parsed = parseUmlFigure(fig);
+    if (parsed) setUml({ steps: parsed.steps, title: parsed.title, el: fig });
+  };
+
+  const saveUml = (steps: UmlStep[], title: string) => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const tpl = document.createElement("template");
+    if (uml?.el) {
+      tpl.innerHTML = umlFigureHtml(steps, title);
+      uml.el.replaceWith(tpl.content);
+    } else {
+      // Insert at the saved caret (fall back to the end of the post), with an
+      // empty paragraph after so writing can continue below the figure.
+      tpl.innerHTML = umlFigureHtml(steps, title) + "<p><br></p>";
+      let range = savedRangeRef.current;
+      if (!range || !el.contains(range.commonAncestorContainer)) {
+        range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+      }
+      range.deleteContents();
+      range.insertNode(tpl.content);
+    }
+    setUml(null);
+    setWords(countWords(el.innerHTML));
+  };
+
+  const removeUml = () => {
+    uml?.el?.remove();
+    setUml(null);
+    setWords(countWords(bodyRef.current?.innerHTML || ""));
   };
 
   const save = async (nextStatus: PostStatus) => {
@@ -208,6 +263,16 @@ function EditorInner() {
                     {f.label}
                   </button>
                 ))}
+                <span style={{ width: 1, height: 18, background: "#e2e5ee", margin: "0 4px" }} />
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={openUml}
+                  title="Insert sequence diagram (click a diagram in the text to edit it)"
+                  className="transition-colors hover:bg-[#eceef4] hover:text-ink"
+                  style={{ minWidth: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 7, color: "#54596a", fontSize: 11, cursor: "pointer", fontWeight: 700, letterSpacing: "0.03em", padding: "0 7px", fontFamily: "var(--font-sans)" }}
+                >
+                  UML
+                </button>
                 <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 10.5, color: "#9098aa" }}>
                   RICH TEXT
                 </span>
@@ -217,6 +282,7 @@ function EditorInner() {
                 data-rte="1"
                 contentEditable={loaded}
                 suppressContentEditableWarning
+                onClick={onBodyClick}
                 onInput={() => setWords(countWords(bodyRef.current?.innerHTML || ""))}
                 data-placeholder="Write the post — select text and use the toolbar to format it, exactly as it will render."
                 className="article"
@@ -349,12 +415,27 @@ function EditorInner() {
           </div>
         </div>
       </div>
+
+      {uml && (
+        <UmlDialog
+          initialSteps={uml.steps}
+          initialTitle={uml.title}
+          editing={!!uml.el}
+          onSave={saveUml}
+          onRemove={uml.el ? removeUml : undefined}
+          onClose={() => setUml(null)}
+        />
+      )}
     </div>
   );
 }
 
 function countWords(html: string) {
-  const text = html.replace(/<[^>]+>/g, " ").trim();
+  const text = html
+    // Diagram labels live inside the embedded SVG; they aren't prose.
+    .replace(/<figure[^>]*data-uml[\s\S]*?<\/figure>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .trim();
   return text ? text.split(/\s+/).filter(Boolean).length : 0;
 }
 
