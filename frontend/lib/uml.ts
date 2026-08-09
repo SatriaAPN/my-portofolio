@@ -308,15 +308,14 @@ export function umlFigureHtml(steps: UmlStep[], title = ""): string {
   return `<figure data-uml="${data}"${t} contenteditable="false">${renderUmlSvg(steps, title)}</figure>`;
 }
 
-export function parseUmlFigure(
-  el: Element,
-): { steps: UmlStep[]; title: string } | null {
-  const raw = el.getAttribute("data-uml");
-  if (!raw) return null;
+// parseUmlSteps decodes the URI-encoded JSON carried by a data-uml attribute.
+// Usable both from the DOM (editor) and from a raw HTML string (server-side
+// hydration) — see lib/diagrams.ts.
+export function parseUmlSteps(encoded: string): UmlStep[] | null {
   try {
-    const arr = JSON.parse(decodeURIComponent(raw));
+    const arr = JSON.parse(decodeURIComponent(encoded));
     if (!Array.isArray(arr)) return null;
-    const steps = arr
+    return arr
       .map((x) => ({
         source: String(x?.source ?? ""),
         target: String(x?.target ?? ""),
@@ -324,8 +323,17 @@ export function parseUmlFigure(
         session_end: Boolean(x?.session_end),
       }))
       .filter((s) => s.source && s.target && s.description);
-    return { steps, title: el.getAttribute("data-uml-title") || "" };
   } catch {
     return null;
   }
+}
+
+export function parseUmlFigure(
+  el: Element,
+): { steps: UmlStep[]; title: string } | null {
+  const raw = el.getAttribute("data-uml");
+  if (!raw) return null;
+  const steps = parseUmlSteps(raw);
+  if (!steps) return null;
+  return { steps, title: el.getAttribute("data-uml-title") || "" };
 }

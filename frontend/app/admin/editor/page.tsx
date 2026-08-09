@@ -11,6 +11,7 @@ import { FlowchartDialog } from "@/components/admin/FlowchartDialog";
 import { adminCreatePost, adminGetPost, adminUpdatePost, getSite } from "@/lib/api";
 import { parseUmlFigure, umlFigureHtml, type UmlStep } from "@/lib/uml";
 import { flowchartFigureHtml, parseFlowchartFigure, type FlowchartData } from "@/lib/flowchart";
+import { dehydrateDiagrams, hydrateDiagrams } from "@/lib/diagrams";
 import type { PostStatus } from "@/lib/types";
 
 function slugify(s: string) {
@@ -68,7 +69,9 @@ function EditorInner() {
         setCompany(p.company || "");
         setTags(p.tags || []);
         setStatus(p.status);
-        if (bodyRef.current) bodyRef.current.innerHTML = p.body;
+        // Bodies store diagrams as metadata-only figures — render them for
+        // display (and refresh any stale baked SVG from older posts).
+        if (bodyRef.current) bodyRef.current.innerHTML = hydrateDiagrams(p.body);
         setWords(countWords(p.body));
       })
       .catch(() => toast("Could not load post"))
@@ -201,7 +204,9 @@ function EditorInner() {
       toast("Give the post a title first");
       return;
     }
-    const body = bodyRef.current?.innerHTML || "";
+    // Strip rendered SVG out of diagram figures — posts persist metadata
+    // only; the blog page and editor re-render it on read (lib/diagrams.ts).
+    const body = dehydrateDiagrams(bodyRef.current?.innerHTML || "");
     const w = countWords(body);
     const today = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
     const payload = {

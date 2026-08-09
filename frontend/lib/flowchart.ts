@@ -305,12 +305,13 @@ export function renderFlowchartSvg(data: FlowchartData): string {
       const inn: Port = g > B.cx ? "right" : "left";
       const [ox, oy] = port(A, out);
       const [ix, iy] = port(B, inn);
-      const dy = isUsed(B.node.id, inn) ? 8 : 0;
+      const oyAdj = oy + (isUsed(A.node.id, out) ? 8 : 0);
+      const iyAdj = iy + (isUsed(B.node.id, inn) ? 8 : 0);
       pts = [
-        [ox, oy + (isUsed(A.node.id, out) ? 8 : 0)],
-        [g, oy],
-        [g, iy + dy],
-        [ix, iy + dy],
+        [ox, oyAdj],
+        [g, oyAdj],
+        [g, iyAdj],
+        [ix, iyAdj],
       ];
       markUsed(A.node.id, out);
       markUsed(B.node.id, inn);
@@ -428,11 +429,12 @@ export function flowchartFigureHtml(data: FlowchartData): string {
   return `<figure data-flowchart="${payload}" contenteditable="false">${renderFlowchartSvg(data)}</figure>`;
 }
 
-export function parseFlowchartFigure(el: Element): FlowchartData | null {
-  const raw = el.getAttribute("data-flowchart");
-  if (!raw) return null;
+// parseFlowchartData decodes the URI-encoded JSON carried by a
+// data-flowchart attribute. Usable both from the DOM (editor) and from a raw
+// HTML string (server-side hydration) — see lib/diagrams.ts.
+export function parseFlowchartData(encoded: string): FlowchartData | null {
   try {
-    const obj = JSON.parse(decodeURIComponent(raw));
+    const obj = JSON.parse(decodeURIComponent(encoded));
     if (!obj || !Array.isArray(obj.nodes) || !Array.isArray(obj.edges)) return null;
     const nodes: FlowNode[] = obj.nodes
       .map((n: unknown, i: number) => {
@@ -462,4 +464,10 @@ export function parseFlowchartFigure(el: Element): FlowchartData | null {
   } catch {
     return null;
   }
+}
+
+export function parseFlowchartFigure(el: Element): FlowchartData | null {
+  const raw = el.getAttribute("data-flowchart");
+  if (!raw) return null;
+  return parseFlowchartData(raw);
 }
