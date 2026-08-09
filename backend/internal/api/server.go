@@ -62,6 +62,7 @@ func (s *Server) Router(allowedOrigin string) http.Handler {
 
 		r.Get("/posts", s.handleAdminListPosts)
 		r.Post("/posts", s.handleCreatePost)
+		r.Post("/posts/assist", s.handleAssistPost)
 		r.Get("/posts/{id}", s.handleGetPost)
 		r.Put("/posts/{id}", s.handleUpdatePost)
 		r.Delete("/posts/{id}", s.handleDeletePost)

@@ -5,6 +5,9 @@ import type { NextConfig } from "next";
 const backend = process.env.BACKEND_URL || "http://localhost:8080";
 
 const nextConfig: NextConfig = {
+  // The AI-assist endpoint can legitimately run for a minute on long posts;
+  // the rewrite proxy's default 30s timeout would cut it off mid-request.
+  experimental: { proxyTimeout: 180_000 },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${backend}/api/:path*` }];
   },

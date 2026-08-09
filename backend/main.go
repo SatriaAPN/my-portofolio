@@ -48,10 +48,13 @@ func main() {
 	handler := srv.Router(origin)
 
 	httpServer := &http.Server{
-		Addr:         ":" + port,
-		Handler:      handler,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		Addr:        ":" + port,
+		Handler:     handler,
+		ReadTimeout: 15 * time.Second,
+		// AI endpoints (post assist, CV generation) legitimately hold the
+		// response for a minute or more while the model works; a short write
+		// timeout hangs up on them mid-request.
+		WriteTimeout: 180 * time.Second,
 	}
 
 	log.Printf("portfolio backend listening on :%s (frontend origin: %s)", port, origin)

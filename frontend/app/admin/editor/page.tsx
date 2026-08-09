@@ -8,7 +8,8 @@ import { ToastProvider, useToast } from "@/components/Toast";
 import { Badge } from "@/components/Badge";
 import { UmlDialog } from "@/components/admin/UmlDialog";
 import { FlowchartDialog } from "@/components/admin/FlowchartDialog";
-import { adminCreatePost, adminGetPost, adminUpdatePost, getSite } from "@/lib/api";
+import { AiAssistDialog, type AssistVersion } from "@/components/admin/AiAssistDialog";
+import { adminAssistPost, adminCreatePost, adminGetPost, adminUpdatePost, getSite } from "@/lib/api";
 import { parseUmlFigure, umlFigureHtml, type UmlStep } from "@/lib/uml";
 import { flowchartFigureHtml, parseFlowchartFigure, type FlowchartData } from "@/lib/flowchart";
 import { dehydrateDiagrams, hydrateDiagrams } from "@/lib/diagrams";
@@ -56,6 +57,11 @@ function EditorInner() {
   const [uml, setUml] = useState<{ steps: UmlStep[]; title: string; el: HTMLElement | null } | null>(null);
   const [flow, setFlow] = useState<{ chart: FlowchartData; el: HTMLElement | null } | null>(null);
   const savedRangeRef = useRef<Range | null>(null);
+  // AI assist: the prompt, the in-flight flag, and the proposal under review.
+  // `current` snapshots the editor at request time so the diff stays honest.
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [assist, setAssist] = useState<{ instruction: string; current: AssistVersion; proposal: AssistVersion } | null>(null);
 
   useEffect(() => {
     if (!postId) {
@@ -197,6 +203,43 @@ function EditorInner() {
     flow?.el?.remove();
     setFlow(null);
     setWords(countWords(bodyRef.current?.innerHTML || ""));
+  };
+
+  // AI assist: send the current (possibly unsaved) content plus the
+  // instruction; the proposal comes back for accept/decline review. Bodies
+  // travel in storage form so the model sees diagram metadata, not SVG.
+  const runAssist = async () => {
+    const instruction = aiPrompt.trim();
+    if (!instruction) {
+      toast("Tell the AI what to improve first");
+      return;
+    }
+    const current: AssistVersion = {
+      title: title.trim(),
+      excerpt,
+      body: dehydrateDiagrams(bodyRef.current?.innerHTML || ""),
+    };
+    setAiBusy(true);
+    try {
+      const res = await adminAssistPost({ instruction, ...current, tags });
+      // Defensive dehydrate: a misbehaving model could bake SVG into figures.
+      setAssist({ instruction, current, proposal: { ...res, body: dehydrateDiagrams(res.body) } });
+    } catch {
+      toast("AI assist failed — try again");
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const acceptAssist = () => {
+    if (!assist) return;
+    setTitle(assist.proposal.title);
+    setExcerpt(assist.proposal.excerpt);
+    if (bodyRef.current) bodyRef.current.innerHTML = hydrateDiagrams(assist.proposal.body);
+    setWords(countWords(assist.proposal.body));
+    setAssist(null);
+    setAiPrompt("");
+    toast("AI changes applied — review and save when ready");
   };
 
   const save = async (nextStatus: PostStatus) => {
@@ -362,6 +405,30 @@ function EditorInner() {
               </div>
             </div>
             <div style={rail}>
+              <div style={railLabel}>AI ASSIST</div>
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="What should the AI improve? e.g. “tighten the intro” or “add a flowchart of the retry logic”…"
+                rows={3}
+                className="focus:border-primary focus:outline-none"
+                style={{ border: "1px solid #e2e5ee", borderRadius: 11, padding: "10px 12px", fontSize: 13.5, fontFamily: "var(--font-sans)", color: "#1a1c22", resize: "vertical", width: "100%" }}
+              />
+              <button
+                onClick={runAssist}
+                disabled={aiBusy || !aiPrompt.trim()}
+                className="mt-2.5 w-full text-white transition-colors hover:bg-[#3a45b8] disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ background: "#4f5bd5", border: "none", borderRadius: 11, padding: "10px 14px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+              >
+                {aiBusy ? "Thinking…" : "Propose changes"}
+              </button>
+              <div style={{ fontSize: 12, color: "#9098aa", marginTop: 9, lineHeight: 1.5 }}>
+                The AI revises the post per your instruction. You review a
+                comparison and accept or decline — nothing changes until you
+                accept, and nothing is saved until you save.
+              </div>
+            </div>
+            <div style={rail}>
               <div style={railLabel}>COMPANY</div>
               <select
                 value={company}
@@ -482,6 +549,15 @@ function EditorInner() {
           onSave={saveFlow}
           onRemove={flow.el ? removeFlow : undefined}
           onClose={() => setFlow(null)}
+        />
+      )}
+      {assist && (
+        <AiAssistDialog
+          instruction={assist.instruction}
+          current={assist.current}
+          proposal={assist.proposal}
+          onAccept={acceptAssist}
+          onClose={() => setAssist(null)}
         />
       )}
     </div>

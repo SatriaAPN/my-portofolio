@@ -42,7 +42,11 @@ func (c *ClaudeProvider) Model() string { return c.model }
 
 // complete runs a single non-streaming message and returns the concatenated text.
 func (c *ClaudeProvider) complete(system, user string, maxTokens int64) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	return c.completeWithin(45*time.Second, system, user, maxTokens)
+}
+
+func (c *ClaudeProvider) completeWithin(timeout time.Duration, system, user string, maxTokens int64) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	resp, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{

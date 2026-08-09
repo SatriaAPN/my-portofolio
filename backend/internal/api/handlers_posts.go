@@ -1,8 +1,11 @@
 package api
 
 import (
+	"log"
 	"net/http"
+	"strings"
 
+	"portfolio-backend/internal/ai"
 	"portfolio-backend/internal/models"
 )
 
@@ -68,6 +71,28 @@ func (s *Server) handleUpdatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, updated)
+}
+
+// handleAssistPost runs the editor's AI-assist request: current post content
+// + an instruction in, a full revised version out. Nothing is persisted —
+// the editor shows a comparison and the author accepts or declines.
+func (s *Server) handleAssistPost(w http.ResponseWriter, r *http.Request) {
+	var req ai.AssistRequest
+	if err := decode(r, &req); err != nil {
+		writeErr(w, 400, "invalid request body")
+		return
+	}
+	if strings.TrimSpace(req.Instruction) == "" {
+		writeErr(w, 400, "instruction is required")
+		return
+	}
+	res, err := s.ai.AssistPost(req)
+	if err != nil {
+		log.Printf("assist: %v", err)
+		writeErr(w, 502, "AI assist failed — try again")
+		return
+	}
+	writeJSON(w, 200, res)
 }
 
 func (s *Server) handleDeletePost(w http.ResponseWriter, r *http.Request) {

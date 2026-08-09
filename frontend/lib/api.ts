@@ -88,6 +88,26 @@ export const adminUpdatePost = (id: number, p: Partial<Post>) =>
 export const adminDeletePost = (id: number) =>
   req<{ ok: boolean }>(`/api/admin/posts/${id}`, { method: "DELETE" });
 
+// AI assist for the editor: current content + instruction in, a full revised
+// version out. Nothing is persisted — the editor diffs it for accept/decline.
+export interface AssistPayload {
+  instruction: string;
+  title: string;
+  excerpt: string;
+  body: string; // storage-form HTML (diagrams as metadata-only figures)
+  tags: string[];
+}
+export interface AssistResult {
+  title: string;
+  excerpt: string;
+  body: string;
+}
+export const adminAssistPost = (payload: AssistPayload) =>
+  req<AssistResult>("/api/admin/posts/assist", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
 /* ---------- Admin: projects ---------- */
 
 export const adminListProjects = () => req<Project[]>("/api/admin/projects");
