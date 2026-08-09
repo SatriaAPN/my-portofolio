@@ -275,24 +275,28 @@
   max-width: 100%;
   border-radius: 12px;
 }
-/* Sequence-diagram add-on (<figure data-uml> with the rendered SVG inside). */
-.article figure[data-uml] {
+/* Diagram add-ons (<figure data-uml>/<figure data-flowchart>, SVG baked in). */
+.article figure[data-uml],
+.article figure[data-flowchart] {
   margin: 1.9em auto;
   max-width: 100%;
   overflow-x: auto;
   text-align: center;
 }
-.article figure[data-uml] svg {
+.article figure[data-uml] svg,
+.article figure[data-flowchart] svg {
   display: inline-block;
   height: auto;
 }
 /* In the editor the figure is an atomic block — click it to reopen the builder. */
-[data-rte] figure[data-uml] {
+[data-rte] figure[data-uml],
+[data-rte] figure[data-flowchart] {
   cursor: pointer;
   border-radius: 14px;
   transition: box-shadow 0.15s ease;
 }
-[data-rte] figure[data-uml]:hover {
+[data-rte] figure[data-uml]:hover,
+[data-rte] figure[data-flowchart]:hover {
   box-shadow: 0 0 0 2px rgba(79, 91, 213, 0.45);
 }
 

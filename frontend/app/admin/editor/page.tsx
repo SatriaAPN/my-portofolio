@@ -7,8 +7,10 @@ import { AdminGate } from "@/components/admin/AdminGate";
 import { ToastProvider, useToast } from "@/components/Toast";
 import { Badge } from "@/components/Badge";
 import { UmlDialog } from "@/components/admin/UmlDialog";
+import { FlowchartDialog } from "@/components/admin/FlowchartDialog";
 import { adminCreatePost, adminGetPost, adminUpdatePost, getSite } from "@/lib/api";
 import { parseUmlFigure, umlFigureHtml, type UmlStep } from "@/lib/uml";
+import { flowchartFigureHtml, parseFlowchartFigure, type FlowchartData } from "@/lib/flowchart";
 import type { PostStatus } from "@/lib/types";
 
 function slugify(s: string) {
@@ -47,10 +49,11 @@ function EditorInner() {
   const [loaded, setLoaded] = useState(false);
   const [companies, setCompanies] = useState<string[]>([]);
   const [allSkills, setAllSkills] = useState<string[]>([]);
-  // Sequence-diagram add-on: null = closed; el = the <figure> being edited
-  // (null when inserting a new one). The caret is saved when the dialog opens
-  // because the editor loses focus to the dialog's inputs.
+  // Diagram add-ons: null = closed; el = the <figure> being edited (null when
+  // inserting a new one). The caret is saved when a dialog opens because the
+  // editor loses focus to the dialog's inputs.
   const [uml, setUml] = useState<{ steps: UmlStep[]; title: string; el: HTMLElement | null } | null>(null);
+  const [flow, setFlow] = useState<{ chart: FlowchartData; el: HTMLElement | null } | null>(null);
   const savedRangeRef = useRef<Range | null>(null);
 
   useEffect(() => {
@@ -113,35 +116,52 @@ function EditorInner() {
     setWords(countWords(el.innerHTML));
   };
 
-  const openUml = () => {
+  const saveCaret = () => {
     const el = bodyRef.current;
     const sel = window.getSelection();
     savedRangeRef.current =
       el && sel && sel.rangeCount > 0 && el.contains(sel.getRangeAt(0).commonAncestorContainer)
         ? sel.getRangeAt(0).cloneRange()
         : null;
+  };
+
+  const openUml = () => {
+    saveCaret();
     setUml({ steps: [], title: "", el: null });
   };
 
-  // Clicking an existing diagram re-opens the builder pre-filled.
-  const onBodyClick = (e: React.MouseEvent) => {
-    const fig = (e.target as HTMLElement).closest?.("figure[data-uml]") as HTMLElement | null;
-    if (!fig || !bodyRef.current?.contains(fig)) return;
-    const parsed = parseUmlFigure(fig);
-    if (parsed) setUml({ steps: parsed.steps, title: parsed.title, el: fig });
+  const openFlow = () => {
+    saveCaret();
+    setFlow({ chart: { title: "", nodes: [], edges: [] }, el: null });
   };
 
-  const saveUml = (steps: UmlStep[], title: string) => {
+  // Clicking an existing diagram re-opens its builder pre-filled.
+  const onBodyClick = (e: React.MouseEvent) => {
+    const fig = (e.target as HTMLElement).closest?.(
+      "figure[data-uml],figure[data-flowchart]",
+    ) as HTMLElement | null;
+    if (!fig || !bodyRef.current?.contains(fig)) return;
+    if (fig.hasAttribute("data-uml")) {
+      const parsed = parseUmlFigure(fig);
+      if (parsed) setUml({ steps: parsed.steps, title: parsed.title, el: fig });
+    } else {
+      const parsed = parseFlowchartFigure(fig);
+      if (parsed) setFlow({ chart: parsed, el: fig });
+    }
+  };
+
+  // Replace the figure being edited, or insert at the saved caret (falling
+  // back to the end of the post) with an empty paragraph after so writing can
+  // continue below the figure.
+  const insertFigureHtml = (html: string, editingEl: HTMLElement | null) => {
     const el = bodyRef.current;
     if (!el) return;
     const tpl = document.createElement("template");
-    if (uml?.el) {
-      tpl.innerHTML = umlFigureHtml(steps, title);
-      uml.el.replaceWith(tpl.content);
+    if (editingEl) {
+      tpl.innerHTML = html;
+      editingEl.replaceWith(tpl.content);
     } else {
-      // Insert at the saved caret (fall back to the end of the post), with an
-      // empty paragraph after so writing can continue below the figure.
-      tpl.innerHTML = umlFigureHtml(steps, title) + "<p><br></p>";
+      tpl.innerHTML = html + "<p><br></p>";
       let range = savedRangeRef.current;
       if (!range || !el.contains(range.commonAncestorContainer)) {
         range = document.createRange();
@@ -151,13 +171,28 @@ function EditorInner() {
       range.deleteContents();
       range.insertNode(tpl.content);
     }
-    setUml(null);
     setWords(countWords(el.innerHTML));
+  };
+
+  const saveUml = (steps: UmlStep[], title: string) => {
+    insertFigureHtml(umlFigureHtml(steps, title), uml?.el ?? null);
+    setUml(null);
   };
 
   const removeUml = () => {
     uml?.el?.remove();
     setUml(null);
+    setWords(countWords(bodyRef.current?.innerHTML || ""));
+  };
+
+  const saveFlow = (chart: FlowchartData) => {
+    insertFigureHtml(flowchartFigureHtml(chart), flow?.el ?? null);
+    setFlow(null);
+  };
+
+  const removeFlow = () => {
+    flow?.el?.remove();
+    setFlow(null);
     setWords(countWords(bodyRef.current?.innerHTML || ""));
   };
 
@@ -269,9 +304,18 @@ function EditorInner() {
                   onClick={openUml}
                   title="Insert sequence diagram (click a diagram in the text to edit it)"
                   className="transition-colors hover:bg-[#eceef4] hover:text-ink"
-                  style={{ minWidth: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 7, color: "#54596a", fontSize: 11, cursor: "pointer", fontWeight: 700, letterSpacing: "0.03em", padding: "0 7px", fontFamily: "var(--font-sans)" }}
+                  style={diagramBtn}
                 >
                   UML
+                </button>
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={openFlow}
+                  title="Insert flowchart (click a flowchart in the text to edit it)"
+                  className="transition-colors hover:bg-[#eceef4] hover:text-ink"
+                  style={diagramBtn}
+                >
+                  FLOW
                 </button>
                 <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 10.5, color: "#9098aa" }}>
                   RICH TEXT
@@ -426,14 +470,23 @@ function EditorInner() {
           onClose={() => setUml(null)}
         />
       )}
+      {flow && (
+        <FlowchartDialog
+          initial={flow.chart}
+          editing={!!flow.el}
+          onSave={saveFlow}
+          onRemove={flow.el ? removeFlow : undefined}
+          onClose={() => setFlow(null)}
+        />
+      )}
     </div>
   );
 }
 
 function countWords(html: string) {
   const text = html
-    // Diagram labels live inside the embedded SVG; they aren't prose.
-    .replace(/<figure[^>]*data-uml[\s\S]*?<\/figure>/gi, " ")
+    // Diagram labels live inside the embedded SVGs; they aren't prose.
+    .replace(/<figure[^>]*data-(?:uml|flowchart)[\s\S]*?<\/figure>/gi, " ")
     .replace(/<[^>]+>/g, " ")
     .trim();
   return text ? text.split(/\s+/).filter(Boolean).length : 0;
@@ -452,6 +505,8 @@ function dedupe(values: string[]): string[] {
   }
   return out;
 }
+
+const diagramBtn: React.CSSProperties = { minWidth: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 7, color: "#54596a", fontSize: 11, cursor: "pointer", fontWeight: 700, letterSpacing: "0.03em", padding: "0 7px", fontFamily: "var(--font-sans)" };
 
 const rail: React.CSSProperties = { background: "#fff", border: "1px solid #eceef2", borderRadius: 14, padding: 20 };
 const railLabel: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.05em", color: "#9098aa", marginBottom: 12 };
