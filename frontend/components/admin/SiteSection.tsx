@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { adminDeleteResume, adminSetResume, adminUpdateSite } from "@/lib/api";
 import { resizeImageToDataURL } from "@/lib/image";
 import { fileToDataURL } from "@/lib/file";
@@ -19,7 +19,14 @@ export function SiteSection({ site, onRefresh }: { site: SiteContent; onRefresh:
   const [newHeadline, setNewHeadline] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => setSc(site), [site]);
+  // Re-sync local edit state when the site prop changes (e.g. after a refresh
+  // re-fetches). Done during render — React's documented alternative to
+  // setting state in an effect ("You Might Not Need an Effect").
+  const [prevSite, setPrevSite] = useState(site);
+  if (site !== prevSite) {
+    setPrevSite(site);
+    setSc(site);
+  }
 
   const save = (next: SiteContent, immediate = false) => {
     setSc(next);

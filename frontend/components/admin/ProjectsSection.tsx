@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ApiError, adminDeleteProject, adminUpdateProject } from "@/lib/api";
 import { resizeImageToDataURL } from "@/lib/image";
 import { useToast } from "@/components/Toast";
@@ -39,7 +39,14 @@ function ProjectCard({ project, onRefresh }: { project: Project; onRefresh: () =
   const [p, setP] = useState(project);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => setP(project), [project]);
+  // Re-sync local edit state when the project prop changes (e.g. after a
+  // refresh re-fetches). Done during render — React's documented alternative
+  // to setting state in an effect ("You Might Not Need an Effect").
+  const [prevProject, setPrevProject] = useState(project);
+  if (project !== prevProject) {
+    setPrevProject(project);
+    setP(project);
+  }
 
   const persist = async (next: Project, immediate = false) => {
     setP(next);

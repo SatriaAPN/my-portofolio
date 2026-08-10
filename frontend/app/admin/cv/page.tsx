@@ -63,11 +63,12 @@ function CVInner() {
       .catch(() => toast("Could not load CV"));
   }, [cvId, toast]);
 
-  // Drive the working-stage step animation.
+  // Drive the working-stage step animation. The step counter is reset in the
+  // handler that enters the "working" stage (see generate); the effect only
+  // owns the interval timer (an external system).
   const stepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (stage !== "working") return;
-    setStep(0);
     stepTimer.current = setInterval(() => {
       setStep((s) => (s < STEPS.length ? s + 1 : s));
     }, 700);
@@ -81,6 +82,7 @@ function CVInner() {
       toast("Paste a fuller job description first");
       return;
     }
+    setStep(0);
     setStage("working");
     try {
       const [cv] = await Promise.all([

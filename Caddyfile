@@ -1,0 +1,20 @@
+# Caddy provisions and renews Let's Encrypt TLS automatically once the domain's
+# DNS points at this server and ports 80/443 are reachable from the internet.
+
+# Send www to the canonical apex.
+www.satria-apn.com {
+	redir https://satria-apn.com{uri} permanent
+}
+
+satria-apn.com {
+	encode zstd gzip
+
+	# API calls go straight to the Go backend so the auth cookie stays
+	# first-party on satria-apn.com (no dependence on the Next.js rewrite,
+	# whose destination is otherwise baked at build time).
+	@api path /api/*
+	reverse_proxy @api backend:8080
+
+	# Everything else is served by the Next.js standalone server.
+	reverse_proxy frontend:3000
+}

@@ -1,0 +1,51 @@
+name: CI
+
+# Runs checks on every push (any branch) and on pull requests.
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch cancels the older in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend (lint + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      # `next build` also type-checks; it fails the job on type errors.
+      - run: npm run build
+
+  backend:
+    name: Backend (vet + build + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: backend/go.sum
+
+      - run: go vet ./...
+      - run: go build ./...
+      # Passes cleanly even before you add tests ("no test files").
+      - run: go test ./...

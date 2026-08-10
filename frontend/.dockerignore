@@ -1,0 +1,19 @@
+node_modules
+.next
+out
+build
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# VCS / editor / logs
+.git
+.gitignore
+.DS_Store
+npm-debug.log*
+*.tsbuildinfo
+
+Dockerfile
+.dockerignore

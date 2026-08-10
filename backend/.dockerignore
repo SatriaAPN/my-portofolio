@@ -1,0 +1,16 @@
+# Never ship local state or secrets into the image / build context.
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+
+# VCS / editor noise
+.git
+.gitignore
+.DS_Store
+
+# The Dockerfile itself doesn't need to be in the context copy
+Dockerfile
+.dockerignore

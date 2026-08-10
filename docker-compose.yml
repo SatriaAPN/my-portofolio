@@ -1,0 +1,62 @@
+# Production runtime for the VPS.
+#
+# Images are built and pushed to GHCR by the GitHub Actions "Deploy" workflow.
+# This file, the Caddyfile, and a `.env` (see .env.prod.example) live together
+# on the VPS. Deploy = `docker compose pull && docker compose up -d`.
+#
+# IMAGE_PREFIX / IMAGE_TAG come from the `.env` file (auto-read by compose) or
+# from the shell (the deploy job exports IMAGE_TAG=<commit sha>).
+
+services:
+  backend:
+    image: ${IMAGE_PREFIX:-ghcr.io/satriaapn/my-portofolio}-backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "8080"
+      # Overrides the image default; kept explicit so the volume path is obvious.
+      DB_PATH: /data/portfolio.db
+    volumes:
+      - backend-data:/data
+    networks: [web]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    image: ${IMAGE_PREFIX:-ghcr.io/satriaapn/my-portofolio}-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Server-side data fetches (lib/api.ts) hit the backend over the compose
+      # network. Browser calls to /api/* are routed by Caddy, not by this.
+      BACKEND_URL: http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [web]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+    networks: [web]
+
+networks:
+  web:
+
+volumes:
+  backend-data:
+  caddy-data:
+  caddy-config:

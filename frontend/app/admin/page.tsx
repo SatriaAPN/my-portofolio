@@ -84,20 +84,23 @@ function Dashboard({ user }: { user: User }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatlogs, setChatlogs] = useState<ChatLog[]>([]);
 
-  const reload = useCallback(async () => {
-    const [p, pr, cv, s, ov] = await Promise.all([
-      adminListPosts(),
-      adminListProjects(),
-      adminListCVs(),
-      getSite(),
-      adminOverview(),
-    ]);
-    setPosts(p);
-    setProjects(pr);
-    setCvs(cv);
-    setSite(s);
-    setOverview(ov);
-  }, []);
+  const reload = useCallback(
+    () =>
+      Promise.all([
+        adminListPosts(),
+        adminListProjects(),
+        adminListCVs(),
+        getSite(),
+        adminOverview(),
+      ]).then(([p, pr, cv, s, ov]) => {
+        setPosts(p);
+        setProjects(pr);
+        setCvs(cv);
+        setSite(s);
+        setOverview(ov);
+      }),
+    [],
+  );
 
   useEffect(() => {
     reload().catch(() => {});

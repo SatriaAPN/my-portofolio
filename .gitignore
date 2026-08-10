@@ -1,0 +1,12 @@
+# Secrets / environment (examples are kept)
+.env
+.env.*
+!.env.*.example
+
+# SQLite database + WAL sidecars (runtime state, never commit)
+*.db
+*.db-shm
+*.db-wal
+
+# OS noise
+.DS_Store

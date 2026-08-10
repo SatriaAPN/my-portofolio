@@ -48,7 +48,7 @@ function EditorInner() {
   const [tagDraft, setTagDraft] = useState("");
   const [status, setStatus] = useState<PostStatus>("DRAFT");
   const [words, setWords] = useState(0);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(!postId);
   const [companies, setCompanies] = useState<string[]>([]);
   const [allSkills, setAllSkills] = useState<string[]>([]);
   // Diagram add-ons: null = closed; el = the <figure> being edited (null when
@@ -63,11 +63,17 @@ function EditorInner() {
   const [aiBusy, setAiBusy] = useState(false);
   const [assist, setAssist] = useState<{ instruction: string; current: AssistVersion; proposal: AssistVersion } | null>(null);
 
+  // Reset the loaded flag when navigating between posts, during render rather
+  // than in an effect: a post that must be fetched starts unloaded, while the
+  // "new post" view (no id) is ready immediately.
+  const [prevPostId, setPrevPostId] = useState(postId);
+  if (postId !== prevPostId) {
+    setPrevPostId(postId);
+    setLoaded(!postId);
+  }
+
   useEffect(() => {
-    if (!postId) {
-      setLoaded(true);
-      return;
-    }
+    if (!postId) return;
     adminGetPost(Number(postId))
       .then((p) => {
         setTitle(p.title);
