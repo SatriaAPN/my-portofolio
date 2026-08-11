@@ -39,6 +39,34 @@ services:
         condition: service_healthy
     networks: [web]
 
+  # One-shot SQLite -> Google Drive backup. NOT started by `docker compose up`
+  # (held out of the default run by its profile). Trigger it on demand or from
+  # a host cron entry:
+  #   0 0 * * *  cd ~/portfolio && docker compose --profile backup run --rm backup
+  # First-time setup (authorize gdrive once; the token persists in the volume):
+  #   docker compose --profile backup run --rm --entrypoint rclone backup config
+  backup:
+    image: ${IMAGE_PREFIX:-ghcr.io/satriaapn/my-portofolio}-backup:${IMAGE_TAG:-latest}
+    profiles: ["backup"]
+    env_file: .env
+    environment:
+      DB_PATH: /data/portfolio.db
+      RCLONE_CONFIG: /config/rclone/rclone.conf
+      # rclone remote name (created during first-time `rclone config`).
+      RCLONE_REMOTE: gdrive
+      # Destination folder on Drive, and how many days of copies to keep.
+      GDRIVE_DIR: portfolio-backups
+      RETENTION_DAYS: "30"
+      # Only affects the timestamp in backup filenames; change to taste.
+      TZ: UTC
+    volumes:
+      # The live SQLite volume, shared with the backend. `.backup` reads it
+      # consistently even while the backend is writing.
+      - backend-data:/data
+      # Persists the gdrive OAuth token across runs/redeploys.
+      - rclone-config:/config/rclone
+    networks: [web]
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -60,3 +88,4 @@ volumes:
   backend-data:
   caddy-data:
   caddy-config:
+  rclone-config:

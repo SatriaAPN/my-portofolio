@@ -56,6 +56,17 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
+      - name: Build & push backup
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backup
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.prefix }}-backup:latest
+            ${{ steps.meta.outputs.prefix }}-backup:${{ github.sha }}
+          cache-from: type=gha,scope=backup
+          cache-to: type=gha,mode=max,scope=backup
+
   deploy:
     name: Deploy to VPS
     needs: build-and-push
@@ -86,6 +97,8 @@ jobs:
             cd ~/portfolio
             export IMAGE_PREFIX="${{ needs.build-and-push.outputs.prefix }}"
             export IMAGE_TAG="${{ github.sha }}"
-            docker compose pull
+            # `--profile backup` so the one-shot backup image is pulled too;
+            # it still won't start (profiled services are excluded from `up`).
+            docker compose --profile backup pull
             docker compose up -d
             docker image prune -f
