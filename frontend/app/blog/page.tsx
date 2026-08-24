@@ -56,16 +56,26 @@ export default async function BlogPage() {
             className="grid grid-cols-1 overflow-hidden text-ink transition-shadow duration-200 hover:shadow-cardhover md:grid-cols-[1.2fr_1fr]"
             style={{ border: "1px solid #eceef2", borderRadius: 18 }}
           >
-            <div
-              className="flex items-end"
-              style={{ background: STRIPE, minHeight: 280, padding: 16 }}
-            >
-              <span
-                style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#9098aa", background: "#fff", padding: "5px 10px", borderRadius: 7 }}
+            {featured.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={featured.image}
+                alt=""
+                className="h-full w-full object-cover"
+                style={{ minHeight: 280 }}
+              />
+            ) : (
+              <div
+                className="flex items-end"
+                style={{ background: STRIPE, minHeight: 280, padding: 16 }}
               >
-                COVER IMAGE
-              </span>
-            </div>
+                <span
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#9098aa", background: "#fff", padding: "5px 10px", borderRadius: 7 }}
+                >
+                  COVER IMAGE
+                </span>
+              </div>
+            )}
             <div className="flex flex-col justify-center" style={{ padding: "40px 44px" }}>
               <div className="mb-3.5 flex items-center gap-3">
                 <span

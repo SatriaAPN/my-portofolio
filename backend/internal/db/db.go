@@ -58,6 +58,7 @@ func migrate(conn *sql.DB) error {
 		{"site_content", "education", "TEXT NOT NULL DEFAULT '[]'"},
 		{"posts", "company", "TEXT NOT NULL DEFAULT ''"},
 		{"posts", "tags", "TEXT NOT NULL DEFAULT '[]'"},
+		{"posts", "image", "TEXT NOT NULL DEFAULT ''"},
 	}
 	for _, s := range steps {
 		has, err := columnExists(conn, s.table, s.column)

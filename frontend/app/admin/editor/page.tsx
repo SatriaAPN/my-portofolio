@@ -10,6 +10,7 @@ import { UmlDialog } from "@/components/admin/UmlDialog";
 import { FlowchartDialog } from "@/components/admin/FlowchartDialog";
 import { AiAssistDialog, type AssistVersion } from "@/components/admin/AiAssistDialog";
 import { adminAssistPost, adminCreatePost, adminGetPost, adminUpdatePost, getSite } from "@/lib/api";
+import { resizeImageToDataURL } from "@/lib/image";
 import { parseUmlFigure, umlFigureHtml, type UmlStep } from "@/lib/uml";
 import { flowchartFigureHtml, parseFlowchartFigure, type FlowchartData } from "@/lib/flowchart";
 import { dehydrateDiagrams, hydrateDiagrams } from "@/lib/diagrams";
@@ -44,6 +45,7 @@ function EditorInner() {
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [company, setCompany] = useState("");
+  const [image, setImage] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagDraft, setTagDraft] = useState("");
   const [status, setStatus] = useState<PostStatus>("DRAFT");
@@ -79,6 +81,7 @@ function EditorInner() {
         setTitle(p.title);
         setExcerpt(p.excerpt);
         setCompany(p.company || "");
+        setImage(p.image || "");
         setTags(p.tags || []);
         setStatus(p.status);
         // Bodies store diagrams as metadata-only figures — render them for
@@ -248,6 +251,20 @@ function EditorInner() {
     toast("AI changes applied — review and save when ready");
   };
 
+  // Cover image: resize client-side to a JPEG data URL (same pattern as the
+  // projects uploader) so it stays small enough to persist inline with the post.
+  const onCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    try {
+      setImage(await resizeImageToDataURL(f));
+      toast("Cover set — save to keep it");
+    } catch {
+      toast("Could not process image");
+    }
+  };
+
   const save = async (nextStatus: PostStatus) => {
     if (!title.trim()) {
       toast("Give the post a title first");
@@ -263,6 +280,7 @@ function EditorInner() {
       excerpt,
       body,
       company: company.trim(),
+      image,
       tags,
       status: nextStatus,
       readMin: Math.max(1, Math.round(w / 200)),
@@ -527,11 +545,41 @@ function EditorInner() {
             </div>
             <div style={rail}>
               <div style={railLabel}>COVER</div>
-              <div
-                className="flex items-center justify-center text-center"
-                style={{ aspectRatio: "16/9", border: "1.5px dashed #d9dce4", borderRadius: 11, background: "#f9fafc", color: "#9098aa", fontSize: 13, padding: 12 }}
-              >
-                Drop an image here
+              {image ? (
+                <div className="overflow-hidden" style={{ aspectRatio: "16/9", borderRadius: 11, border: "1px solid #eceef2" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image} alt="Cover preview" className="h-full w-full object-cover" />
+                </div>
+              ) : (
+                <label
+                  className="flex cursor-pointer items-center justify-center text-center transition-colors hover:border-primary hover:text-primary"
+                  style={{ aspectRatio: "16/9", border: "1.5px dashed #d9dce4", borderRadius: 11, background: "#f9fafc", color: "#9098aa", fontSize: 13, padding: 12 }}
+                >
+                  Click to upload an image
+                  <input type="file" accept="image/*" onChange={onCover} className="hidden" />
+                </label>
+              )}
+              <div className="mt-2.5 flex items-center gap-1.5">
+                <label
+                  className="cursor-pointer transition-colors hover:bg-[#e3e6fa]"
+                  style={{ background: "#eef0fb", color: "#4f5bd5", borderRadius: 9, padding: "7px 13px", fontSize: 12.5, fontWeight: 600 }}
+                >
+                  {image ? "Replace" : "Upload"}
+                  <input type="file" accept="image/*" onChange={onCover} className="hidden" />
+                </label>
+                {image && (
+                  <button
+                    onClick={() => setImage("")}
+                    className="transition-colors hover:text-[#b3383c]"
+                    style={{ background: "transparent", border: "none", color: "#9098aa", fontSize: 12.5, cursor: "pointer", padding: "7px 5px", fontFamily: "var(--font-sans)" }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: "#9098aa", marginTop: 9, lineHeight: 1.5 }}>
+                Shown at the top of the post and on the blog index. Optional —
+                without one, a striped placeholder is used.
               </div>
             </div>
           </div>

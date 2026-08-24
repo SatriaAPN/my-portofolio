@@ -10,13 +10,13 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-const postCols = `id, title, slug, company, tags, status, date, views, read_min, excerpt, body, position, created_at`
+const postCols = `id, title, slug, company, tags, status, date, views, read_min, excerpt, body, image, position, created_at`
 
 func scanPost(s interface{ Scan(...any) error }) (models.Post, error) {
 	var p models.Post
 	var tags string
 	err := s.Scan(&p.ID, &p.Title, &p.Slug, &p.Company, &tags, &p.Status, &p.Date,
-		&p.Views, &p.ReadMin, &p.Excerpt, &p.Body, &p.Position, &p.CreatedAt)
+		&p.Views, &p.ReadMin, &p.Excerpt, &p.Body, &p.Image, &p.Position, &p.CreatedAt)
 	p.Tags = jsonArray(tags)
 	return p, err
 }
@@ -82,9 +82,9 @@ func (s *Store) CreatePost(p models.Post) (models.Post, error) {
 		return p, err
 	}
 	res, err := s.db.Exec(`INSERT INTO posts
-		(title, slug, company, tags, status, date, views, read_min, excerpt, body, position)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-		p.Title, p.Slug, p.Company, mustJSON(nonNil(p.Tags)), p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, p.Body)
+		(title, slug, company, tags, status, date, views, read_min, excerpt, body, image, position)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+		p.Title, p.Slug, p.Company, mustJSON(nonNil(p.Tags)), p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, p.Body, p.Image)
 	if err != nil {
 		return p, err
 	}
@@ -98,8 +98,8 @@ func (s *Store) UpdatePost(p models.Post) (models.Post, error) {
 	}
 	p.Slug = s.uniqueSlug(p.Slug, p.ID)
 	_, err := s.db.Exec(`UPDATE posts SET title=?, slug=?, company=?, tags=?, status=?, date=?,
-		views=?, read_min=?, excerpt=?, body=? WHERE id=?`,
-		p.Title, p.Slug, p.Company, mustJSON(nonNil(p.Tags)), p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, p.Body, p.ID)
+		views=?, read_min=?, excerpt=?, body=?, image=? WHERE id=?`,
+		p.Title, p.Slug, p.Company, mustJSON(nonNil(p.Tags)), p.Status, p.Date, p.Views, p.ReadMin, p.Excerpt, p.Body, p.Image, p.ID)
 	if err != nil {
 		return p, err
 	}

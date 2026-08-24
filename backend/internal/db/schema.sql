@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS posts (
     read_min   INTEGER NOT NULL DEFAULT 1,
     excerpt    TEXT NOT NULL DEFAULT '',
     body       TEXT NOT NULL DEFAULT '',              -- rich-text HTML
+    image      TEXT NOT NULL DEFAULT '',              -- cover image, base64 data URL (like projects.image); '' → striped placeholder
     position   INTEGER NOT NULL DEFAULT 0,            -- ordering (newest first = smallest)
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

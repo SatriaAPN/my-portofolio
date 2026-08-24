@@ -94,14 +94,24 @@ export default async function BlogPostPage({
 
       {/* COVER */}
       <div className="mx-auto px-5 pt-9 md:px-10" style={{ maxWidth: 960 }}>
-        <div
-          className="flex items-end"
-          style={{ aspectRatio: "21/9", borderRadius: 18, border: "1px solid #e5e8ef", background: STRIPE, padding: 16 }}
-        >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#9098aa", background: "#fff", padding: "5px 10px", borderRadius: 7 }}>
-            COVER IMAGE
-          </span>
-        </div>
+        {post.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.image}
+            alt={post.title}
+            className="w-full object-cover"
+            style={{ aspectRatio: "21/9", borderRadius: 18, border: "1px solid #e5e8ef" }}
+          />
+        ) : (
+          <div
+            className="flex items-end"
+            style={{ aspectRatio: "21/9", borderRadius: 18, border: "1px solid #e5e8ef", background: STRIPE, padding: 16 }}
+          >
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#9098aa", background: "#fff", padding: "5px 10px", borderRadius: 7 }}>
+              COVER IMAGE
+            </span>
+          </div>
+        )}
       </div>
 
       {/* BODY — diagrams are stored as metadata-only figures; render them

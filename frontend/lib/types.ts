@@ -14,6 +14,7 @@ export interface Post {
   readMin: number;
   excerpt: string;
   body: string;
+  image: string; // cover image, base64 data URL; "" → striped placeholder
   createdAt: string;
 }
 

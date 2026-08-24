@@ -14,7 +14,8 @@ type Post struct {
 	Views     string   `json:"views"`
 	ReadMin   int      `json:"readMin"`
 	Excerpt   string   `json:"excerpt"`
-	Body      string   `json:"body"` // rich-text HTML
+	Body      string   `json:"body"`  // rich-text HTML
+	Image     string   `json:"image"` // cover image, base64 data URL (like Project.Image); "" → striped placeholder in UI
 	Position  int      `json:"-"`
 	CreatedAt string   `json:"createdAt"`
 }
