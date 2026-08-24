@@ -134,3 +134,8 @@ Semantics:
 - Form UIs: `frontend/components/admin/UmlDialog.tsx`,
   `frontend/components/admin/FlowchartDialog.tsx` (toolbar buttons **UML**
   and **FLOW** in the post editor; click an existing diagram to edit it).
+- Copy/paste exchange with AI chats: `frontend/lib/exchange.ts` (the
+  editor's **AI ROUND-TRIP** card) — exports the post with figures as
+  readable inline JSON plus a format guide condensed from this file, and
+  imports the reply back to storage form. Keep its guide in sync with this
+  contract.

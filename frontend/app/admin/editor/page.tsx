@@ -14,6 +14,7 @@ import { resizeImageToDataURL } from "@/lib/image";
 import { parseUmlFigure, umlFigureHtml, type UmlStep } from "@/lib/uml";
 import { flowchartFigureHtml, parseFlowchartFigure, type FlowchartData } from "@/lib/flowchart";
 import { dehydrateDiagrams, hydrateDiagrams } from "@/lib/diagrams";
+import { exportPostSource, importPostSource } from "@/lib/exchange";
 import type { PostStatus } from "@/lib/types";
 
 function slugify(s: string) {
@@ -64,6 +65,10 @@ function EditorInner() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [assist, setAssist] = useState<{ instruction: string; current: AssistVersion; proposal: AssistVersion } | null>(null);
+  // AI round-trip: copy the post as readable source, paste the reply back.
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Reset the loaded flag when navigating between posts, during render rather
   // than in an effect: a post that must be fetched starts unloaded, while the
@@ -249,6 +254,41 @@ function EditorInner() {
     setAssist(null);
     setAiPrompt("");
     toast("AI changes applied — review and save when ready");
+  };
+
+  // AI round-trip: the export travels in the readable exchange form (diagram
+  // JSON inline plus a format guide) so any AI chat can edit it faithfully.
+  const copySource = async () => {
+    const text = exportPostSource({
+      title: title.trim(),
+      excerpt,
+      tags,
+      body: bodyRef.current?.innerHTML || "",
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Source copied — paste it into your AI chat");
+    } catch {
+      toast("Could not access the clipboard");
+    }
+  };
+
+  const runImport = () => {
+    const res = importPostSource(importText);
+    if (!res.ok) {
+      setImportError(res.error);
+      return;
+    }
+    const p = res.post;
+    if (p.title !== undefined) setTitle(p.title);
+    if (p.excerpt !== undefined) setExcerpt(p.excerpt);
+    if (p.tags) setTags(dedupe(p.tags));
+    if (bodyRef.current) bodyRef.current.innerHTML = hydrateDiagrams(p.body);
+    setWords(countWords(p.body));
+    setImportOpen(false);
+    setImportText("");
+    setImportError(null);
+    toast("Imported — review and save when ready");
   };
 
   // Cover image: resize client-side to a JPEG data URL (same pattern as the
@@ -453,6 +493,59 @@ function EditorInner() {
               </div>
             </div>
             <div style={rail}>
+              <div style={railLabel}>AI ROUND-TRIP</div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={copySource}
+                  className="flex-1 transition-colors hover:bg-[#e3e6fa]"
+                  style={exchangeBtn}
+                >
+                  Copy source
+                </button>
+                <button
+                  onClick={() => {
+                    setImportOpen((v) => !v);
+                    setImportError(null);
+                  }}
+                  className="flex-1 transition-colors hover:bg-[#e3e6fa]"
+                  style={exchangeBtn}
+                >
+                  {importOpen ? "Close paste" : "Paste back…"}
+                </button>
+              </div>
+              {importOpen && (
+                <div className="mt-2.5 flex flex-col gap-2">
+                  <textarea
+                    value={importText}
+                    onChange={(e) => {
+                      setImportText(e.target.value);
+                      setImportError(null);
+                    }}
+                    placeholder="Paste the AI's reply here — the whole thing is fine, anything outside the markers is ignored."
+                    rows={5}
+                    className="focus:border-primary focus:outline-none"
+                    style={{ border: "1px solid #e2e5ee", borderRadius: 11, padding: "10px 12px", fontSize: 12.5, fontFamily: "var(--font-mono)", color: "#1a1c22", resize: "vertical", width: "100%" }}
+                  />
+                  {importError && (
+                    <div style={{ fontSize: 12, color: "#b3383c", lineHeight: 1.5 }}>{importError}</div>
+                  )}
+                  <button
+                    onClick={runImport}
+                    disabled={!importText.trim()}
+                    className="w-full text-white transition-colors hover:bg-[#3a45b8] disabled:cursor-not-allowed disabled:opacity-40"
+                    style={{ background: "#4f5bd5", border: "none", borderRadius: 11, padding: "10px 14px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+                  >
+                    Import
+                  </button>
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: "#9098aa", marginTop: 9, lineHeight: 1.5 }}>
+                Copy the whole post as editable source — diagrams as plain JSON,
+                with a format guide any AI chat can follow — then paste the
+                reply back to apply it. Nothing is saved until you save.
+              </div>
+            </div>
+            <div style={rail}>
               <div style={railLabel}>COMPANY</div>
               <select
                 value={company}
@@ -642,6 +735,8 @@ function dedupe(values: string[]): string[] {
 }
 
 const diagramBtn: React.CSSProperties = { minWidth: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 7, color: "#54596a", fontSize: 11, cursor: "pointer", fontWeight: 700, letterSpacing: "0.03em", padding: "0 7px", fontFamily: "var(--font-sans)" };
+
+const exchangeBtn: React.CSSProperties = { background: "#eef0fb", color: "#4f5bd5", border: "none", borderRadius: 11, padding: "9px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" };
 
 const rail: React.CSSProperties = { background: "#fff", border: "1px solid #eceef2", borderRadius: 14, padding: 20 };
 const railLabel: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.05em", color: "#9098aa", marginBottom: 12 };

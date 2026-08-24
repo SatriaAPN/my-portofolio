@@ -21,21 +21,34 @@
 import { parseUmlSteps, renderUmlSvg } from "./uml";
 import { parseFlowchartData, renderFlowchartSvg } from "./flowchart";
 
-const FIGURE_RE =
+// Shared with lib/exchange.ts, which rewrites the same figures into the
+// human/AI-readable copy-paste form.
+export const FIGURE_RE =
   /<figure\b[^>]*\bdata-(?:uml|flowchart)="[^"]*"[^>]*>[\s\S]*?<\/figure>/gi;
-const UML_ATTR = /\bdata-uml="([^"]*)"/i;
-const TITLE_ATTR = /\bdata-uml-title="([^"]*)"/i;
-const FLOW_ATTR = /\bdata-flowchart="([^"]*)"/i;
+export const UML_ATTR = /\bdata-uml="([^"]*)"/i;
+export const TITLE_ATTR = /\bdata-uml-title="([^"]*)"/i;
+export const FLOW_ATTR = /\bdata-flowchart="([^"]*)"/i;
 
 // Attribute values are HTML-escaped in the raw string; the URI-encoded JSON
 // contains no entities, but the human-readable title attribute does.
-function unescapeAttr(s: string): string {
+export function unescapeAttr(s: string): string {
   return s
     .replace(/&#39;/g, "'")
     .replace(/&quot;/g, '"')
     .replace(/&gt;/g, ">")
     .replace(/&lt;/g, "<")
     .replace(/&amp;/g, "&");
+}
+
+// Inverse of unescapeAttr — for writing plain text into a double-quoted
+// attribute.
+export function escapeAttr(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // Rebuild the figure tag canonically (attribute values verbatim), with the
