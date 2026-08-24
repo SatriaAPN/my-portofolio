@@ -89,7 +89,13 @@ export function BlogFilterGrid({ posts }: { posts: Post[] }) {
             className="flex flex-col overflow-hidden text-ink transition-[box-shadow,transform] duration-200 hover:-translate-y-[2px] hover:shadow-card"
             style={{ border: "1px solid #eceef2", borderRadius: 16 }}
           >
-            <div style={{ aspectRatio: "16/10", background: STRIPE }} />
+            <div
+              style={
+                p.image
+                  ? { aspectRatio: "16/10", backgroundImage: `url(${p.image})`, backgroundSize: "cover", backgroundPosition: "center" }
+                  : { aspectRatio: "16/10", background: STRIPE }
+              }
+            />
             <div className="flex flex-1 flex-col gap-2.5" style={{ padding: 20 }}>
               <h3
                 style={{

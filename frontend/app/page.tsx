@@ -216,7 +216,13 @@ export default async function HomePage() {
                 className="flex flex-col overflow-hidden text-ink transition-[box-shadow,transform] duration-200 hover:-translate-y-[3px] hover:shadow-cardhover"
                 style={{ border: "1px solid #eceef2", borderRadius: 16 }}
               >
-                <div style={{ aspectRatio: "16/10", background: STRIPE }} />
+                <div
+                  style={
+                    b.image
+                      ? { aspectRatio: "16/10", backgroundImage: `url(${b.image})`, backgroundSize: "cover", backgroundPosition: "center" }
+                      : { aspectRatio: "16/10", background: STRIPE }
+                  }
+                />
                 <div style={{ padding: 20 }}>
                   {b.tags.length > 0 && (
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#4f5bd5", marginBottom: 10 }}>
