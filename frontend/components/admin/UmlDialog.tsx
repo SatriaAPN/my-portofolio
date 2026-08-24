@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { renderUmlSvg, type UmlStep } from "@/lib/uml";
+import { renderUmlSvg, type UmlFragment, type UmlStep } from "@/lib/uml";
 
 // Builder for the sequence-diagram add-on. The editor opens it empty (insert)
 // or pre-filled from an existing <figure data-uml> (edit); onSave receives the
@@ -18,6 +18,13 @@ interface Props {
 
 const EMPTY_ROW: UmlStep = { source: "", target: "", description: "", session_end: false };
 
+const FRAG_META: Record<UmlFragment, { color: string; bg: string; tip: string }> = {
+  alt: { color: "#4f5bd5", bg: "#eef0fb", tip: "Open a conditional frame — the guard goes in the row's text field" },
+  opt: { color: "#4f5bd5", bg: "#eef0fb", tip: "Open an optional frame (a guarded block with no else)" },
+  else: { color: "#a06b10", bg: "#fdf3e3", tip: "Start the alternative branch of the innermost alt" },
+  end: { color: "#54596a", bg: "#eceef4", tip: "Close the innermost open fragment" },
+};
+
 export function UmlDialog({ initialSteps, initialTitle, editing, onSave, onRemove, onClose }: Props) {
   const [rows, setRows] = useState<UmlStep[]>(
     initialSteps.length > 0 ? initialSteps : [{ ...EMPTY_ROW, source: "user" }],
@@ -33,12 +40,32 @@ export function UmlDialog({ initialSteps, initialTitle, editing, onSave, onRemov
   }, [onClose]);
 
   const complete = useMemo(
-    () => rows.filter((s) => s.source.trim() && s.target.trim() && s.description.trim()),
+    () =>
+      rows.filter(
+        (s) => s.fragment || (s.source.trim() && s.target.trim() && s.description.trim()),
+      ),
     [rows],
   );
+  const messageCount = useMemo(() => complete.filter((s) => !s.fragment).length, [complete]);
+  // Strict balance check — the renderer is lenient (auto-closes, drops strays)
+  // but the dialog refuses to save junk metadata.
+  const balanceError = useMemo(() => {
+    const stack: ("alt" | "opt")[] = [];
+    for (const s of complete) {
+      if (s.fragment === "alt" || s.fragment === "opt") stack.push(s.fragment);
+      else if (s.fragment === "else") {
+        if (stack[stack.length - 1] !== "alt") return "an “else” must sit directly inside an open “alt”";
+      } else if (s.fragment === "end" && !stack.pop()) {
+        return "an “end” has no matching “alt”/“opt” above it";
+      }
+    }
+    if (stack.length === 1) return "an open fragment is missing its “end”";
+    if (stack.length > 1) return `${stack.length} open fragments are missing their “end”s`;
+    return "";
+  }, [complete]);
   const svg = useMemo(
-    () => (complete.length ? renderUmlSvg(complete, title.trim()) : ""),
-    [complete, title],
+    () => (messageCount ? renderUmlSvg(complete, title.trim()) : ""),
+    [complete, messageCount, title],
   );
 
   const patch = (i: number, p: Partial<UmlStep>) =>
@@ -52,10 +79,11 @@ export function UmlDialog({ initialSteps, initialTitle, editing, onSave, onRemov
       [next[i], next[j]] = [next[j], next[i]];
       return next;
     });
-  // Prefill a reply: the previous step's target usually answers its source.
+  // Prefill a reply: the previous message's target usually answers its
+  // source (looking back past any fragment markers).
   const add = () =>
     setRows((cur) => {
-      const last = cur[cur.length - 1];
+      const last = [...cur].reverse().find((row) => !row.fragment);
       return [
         ...cur,
         last && last.source.trim() && last.target.trim()
@@ -63,6 +91,8 @@ export function UmlDialog({ initialSteps, initialTitle, editing, onSave, onRemov
           : { ...EMPTY_ROW },
       ];
     });
+  const addFragment = (fragment: UmlFragment) =>
+    setRows((cur) => [...cur, { ...EMPTY_ROW, fragment }]);
 
   return (
     <div
@@ -83,7 +113,7 @@ export function UmlDialog({ initialSteps, initialTitle, editing, onSave, onRemov
               {editing ? "Edit sequence diagram" : "Insert sequence diagram"}
             </div>
             <div style={{ fontSize: 12.5, color: "#9098aa", marginTop: 2 }}>
-              Each step is one arrow. Name a participant “user” to draw it as a stick figure.
+              Each step is one arrow — “user” draws as a stick figure. Wrap steps in alt/opt … end for conditional branches.
             </div>
           </div>
           <span className="flex-1" />
@@ -111,6 +141,45 @@ export function UmlDialog({ initialSteps, initialTitle, editing, onSave, onRemov
           <div style={label}>STEPS</div>
           <div className="flex flex-col gap-2">
             {rows.map((row, i) => {
+              const rowBtns = (
+                <span className="flex items-center gap-1">
+                  <RowBtn onClick={() => move(i, -1)} disabled={i === 0} title="Move up">↑</RowBtn>
+                  <RowBtn onClick={() => move(i, 1)} disabled={i === rows.length - 1} title="Move down">↓</RowBtn>
+                  <RowBtn onClick={() => remove(i)} disabled={rows.length === 1} title="Remove step">×</RowBtn>
+                </span>
+              );
+              if (row.fragment) {
+                const meta = FRAG_META[row.fragment];
+                return (
+                  <div
+                    key={i}
+                    className="flex flex-wrap items-center gap-2"
+                    style={{ border: "1px solid #eceef2", borderRadius: 12, padding: "10px 12px", background: "#f4f5fc" }}
+                  >
+                    <span style={rowIndex}>{i + 1}</span>
+                    <span
+                      title={meta.tip}
+                      style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", color: meta.color, background: meta.bg, borderRadius: 7, padding: "4px 9px" }}
+                    >
+                      {row.fragment.toUpperCase()}
+                    </span>
+                    {row.fragment === "end" ? (
+                      <span className="flex-1" style={{ fontSize: 12.5, color: "#9098aa" }}>
+                        closes the innermost open fragment
+                      </span>
+                    ) : (
+                      <input
+                        value={row.description}
+                        onChange={(e) => patch(i, { description: e.target.value })}
+                        placeholder={row.fragment === "else" ? "guard (optional — shows as [else])" : "guard, e.g. has rebuilding disk"}
+                        className="flex-1 focus:border-primary focus:outline-none"
+                        style={{ ...input, minWidth: 150 }}
+                      />
+                    )}
+                    {rowBtns}
+                  </div>
+                );
+              }
               const partial =
                 (row.source.trim() || row.target.trim() || row.description.trim()) &&
                 !(row.source.trim() && row.target.trim() && row.description.trim());
@@ -120,9 +189,7 @@ export function UmlDialog({ initialSteps, initialTitle, editing, onSave, onRemov
                   className="flex flex-wrap items-center gap-2"
                   style={{ border: `1px solid ${partial ? "#f0c36d" : "#eceef2"}`, borderRadius: 12, padding: "10px 12px", background: "#f9fafc" }}
                 >
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#9098aa", width: 18, textAlign: "right" }}>
-                    {i + 1}
-                  </span>
+                  <span style={rowIndex}>{i + 1}</span>
                   <input
                     value={row.source}
                     onChange={(e) => patch(i, { source: e.target.value })}
@@ -158,26 +225,37 @@ export function UmlDialog({ initialSteps, initialTitle, editing, onSave, onRemov
                     />
                     ends session
                   </label>
-                  <span className="flex items-center gap-1">
-                    <RowBtn onClick={() => move(i, -1)} disabled={i === 0} title="Move up">↑</RowBtn>
-                    <RowBtn onClick={() => move(i, 1)} disabled={i === rows.length - 1} title="Move down">↓</RowBtn>
-                    <RowBtn onClick={() => remove(i)} disabled={rows.length === 1} title="Remove step">×</RowBtn>
-                  </span>
+                  {rowBtns}
                 </div>
               );
             })}
           </div>
-          <div className="mt-2.5 flex items-center gap-3">
-            <button
-              onClick={add}
-              className="transition-colors hover:bg-[#e3e6fa]"
-              style={{ background: "#eef0fb", color: "#4f5bd5", border: "none", borderRadius: 11, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}
-            >
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <button onClick={add} className="transition-colors hover:bg-[#e3e6fa]" style={addBtn}>
               + Add step
             </button>
-            <span style={{ fontSize: 12, color: "#9098aa" }}>
-              “Ends session” on a reply closes the sender’s activation bar — the receiver keeps going. Incomplete rows are left out.
-            </span>
+            <span style={{ width: 1, height: 18, background: "#e2e5ee" }} />
+            {(Object.keys(FRAG_META) as UmlFragment[]).map((k) => (
+              <button
+                key={k}
+                onClick={() => addFragment(k)}
+                title={FRAG_META[k].tip}
+                className="transition-colors hover:bg-[#e3e6fa]"
+                style={{ ...addBtn, padding: "9px 11px", fontFamily: "var(--font-mono)", fontSize: 12 }}
+              >
+                + {k}
+              </button>
+            ))}
+          </div>
+          {balanceError && (
+            <div style={{ color: "#d64545", fontSize: 12.5, marginTop: 8 }}>
+              Fragments are unbalanced — {balanceError}.
+            </div>
+          )}
+          <div style={{ fontSize: 12, color: "#9098aa", marginTop: 8, lineHeight: 1.5 }}>
+            “Ends session” on a reply closes the sender’s activation bar — the receiver keeps going.
+            alt/opt … end wrap the steps between them in a conditional frame (else splits an alt); guards go
+            in the marker’s text field. Incomplete rows are left out.
           </div>
 
           <div style={{ ...label, marginTop: 20 }}>PREVIEW</div>
@@ -216,8 +294,8 @@ export function UmlDialog({ initialSteps, initialTitle, editing, onSave, onRemov
             Cancel
           </button>
           <button
-            onClick={() => complete.length && onSave(complete, title.trim())}
-            disabled={complete.length === 0}
+            onClick={() => messageCount > 0 && !balanceError && onSave(complete, title.trim())}
+            disabled={messageCount === 0 || !!balanceError}
             className="text-white transition-colors hover:bg-[#3a45b8] disabled:cursor-not-allowed disabled:opacity-40"
             style={{ background: "#4f5bd5", border: "none", borderRadius: 11, padding: "11px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}
           >
@@ -259,6 +337,26 @@ const label: React.CSSProperties = {
   letterSpacing: "0.05em",
   color: "#9098aa",
   marginBottom: 8,
+};
+
+const rowIndex: React.CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 11,
+  color: "#9098aa",
+  width: 18,
+  textAlign: "right",
+};
+
+const addBtn: React.CSSProperties = {
+  background: "#eef0fb",
+  color: "#4f5bd5",
+  border: "none",
+  borderRadius: 11,
+  padding: "9px 14px",
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: "pointer",
+  fontFamily: "var(--font-sans)",
 };
 
 const input: React.CSSProperties = {

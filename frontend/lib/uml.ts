@@ -1,20 +1,31 @@
 // UML sequence-diagram add-on for blog posts.
 //
-// The editor builds an array of steps ({ source, target, description,
-// session_end }), renders it to an SVG string with renderUmlSvg, and embeds it
-// in the post body as:
+// The editor builds a flat array of steps — message arrows ({ source, target,
+// description, session_end }) plus optional combined-fragment markers
+// ({ fragment: "alt" | "opt" | "else" | "end" }, guard in description) — and
+// embeds it in the post body as a metadata-only figure (see DIAGRAMS.md):
 //
-//   <figure data-uml="<uri-encoded step JSON>">…svg…</figure>
+//   <figure data-uml="<uri-encoded step JSON>"></figure>
 //
-// The SVG is baked into the stored HTML, so the public blog page renders the
-// diagram with no client JS; the metadata on the attribute is only read back
-// by the editor to re-open the builder for an existing diagram.
+// The JSON metadata is the single source of truth; the SVG is derived data,
+// rendered on read by lib/diagrams.ts (public blog page, editor load) and
+// stripped again on save. renderUmlSvg is a pure string builder (no DOM).
+
+export type UmlFragment = "alt" | "opt" | "else" | "end";
 
 export interface UmlStep {
   source: string;
   target: string;
-  description: string;
+  description: string; // on a marker row this is the guard text
   session_end: boolean;
+  // Set on marker rows only: "alt"/"opt" open a frame, "else" starts the next
+  // operand, "end" closes the innermost frame. Marker rows keep source/target
+  // empty so readers without fragment support drop them (frameless fallback).
+  fragment?: UmlFragment;
+}
+
+function asFragment(x: unknown): UmlFragment | undefined {
+  return x === "alt" || x === "opt" || x === "else" || x === "end" ? x : undefined;
 }
 
 /* ---------- layout constants ---------- */
@@ -32,6 +43,9 @@ const ACT_W = 13; // activation bar width
 const ACT_PAD = 13; // activation overhang before/after its messages
 const TAIL = 44; // lifeline continuation below the last message
 const MIN_COL_GAP = 170;
+const FRAG_PAD_X = 12; // fragment frame → contained content
+const FRAG_NEST = 8; // parent fragment inset around a nested frame
+const FRAG_TAB_H = 20; // fragment operator pentagon height
 
 const INK = "#1a1c22";
 const MUTED = "#9098aa";
@@ -64,29 +78,54 @@ function sameParticipant(a: string, b: string): boolean {
 /* ---------- renderer ---------- */
 
 export function renderUmlSvg(rawSteps: UmlStep[], title = ""): string {
-  const steps = rawSteps
-    .map((s) => ({
-      source: s.source.trim(),
-      target: s.target.trim(),
-      description: s.description.trim(),
-      session_end: Boolean(s.session_end),
-    }))
-    .filter((s) => s.source && s.target && s.description);
+  const cleaned = rawSteps
+    .map((s): UmlStep => {
+      const fragment = asFragment(s.fragment);
+      return fragment
+        ? { source: "", target: "", description: s.description.trim(), session_end: false, fragment }
+        : {
+            source: s.source.trim(),
+            target: s.target.trim(),
+            description: s.description.trim(),
+            session_end: Boolean(s.session_end),
+          };
+    })
+    .filter((s) => s.fragment || (s.source && s.target && s.description));
 
-  if (steps.length === 0) {
+  // Balance the markers before any layout: drop stray else/end, auto-close
+  // frames still open at the end. The dialog validates strictly; rendering
+  // stays lenient so imperfect metadata still draws something sensible.
+  const steps: UmlStep[] = [];
+  let open = 0;
+  for (const s of cleaned) {
+    if (s.fragment === "else" || s.fragment === "end") {
+      if (open === 0) continue;
+      if (s.fragment === "end") open--;
+    } else if (s.fragment) {
+      open++;
+    }
+    steps.push(s);
+  }
+  for (; open > 0; open--) {
+    steps.push({ source: "", target: "", description: "", session_end: false, fragment: "end" });
+  }
+
+  const messages = steps.filter((s) => !s.fragment);
+  if (messages.length === 0) {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" style="max-width:320px;width:100%;height:auto"><rect x="1" y="1" width="318" height="78" fill="#f9fafc" stroke="#e2e5ee" stroke-dasharray="5 4" rx="10"/><text x="160" y="45" text-anchor="middle" font-size="13" fill="${MUTED}">Empty sequence diagram</text></svg>`;
   }
 
-  // Participants in order of first appearance (case-insensitive identity).
+  // Participants in order of first appearance (case-insensitive identity),
+  // from message rows only — marker rows carry no participants.
   const participants: string[] = [];
-  for (const s of steps) {
+  for (const s of messages) {
     for (const name of [s.source, s.target]) {
       if (!participants.some((p) => sameParticipant(p, name))) participants.push(name);
     }
   }
   const pIndex = (name: string) =>
     participants.findIndex((p) => sameParticipant(p, name));
-  const isSelf = (s: UmlStep) => sameParticipant(s.source, s.target);
+  const isSelf = (s: UmlStep) => !s.fragment && sameParticipant(s.source, s.target);
 
   /* ----- horizontal layout ----- */
 
@@ -101,7 +140,7 @@ export function renderUmlSvg(rawSteps: UmlStep[], title = ""): string {
     minGap.push(Math.max(MIN_COL_GAP, (widths[i] + widths[i + 1]) / 2 + 56));
   }
   let extraRight = 0;
-  for (const s of steps) {
+  for (const s of messages) {
     const a = pIndex(s.source);
     const b = pIndex(s.target);
     const labelW = est(s.description, 13.5) + 90;
@@ -122,7 +161,9 @@ export function renderUmlSvg(rawSteps: UmlStep[], title = ""): string {
   for (let i = 0; i < participants.length; i++) {
     centers.push(i === 0 ? contentLeft + widths[0] / 2 : centers[i - 1] + minGap[i - 1]);
   }
-  const width =
+  // Finalized after the fragment pass — a frame's padding or guard text can
+  // reach past the rightmost lifeline content.
+  let width =
     centers[centers.length - 1] +
     widths[widths.length - 1] / 2 +
     extraRight +
@@ -135,13 +176,35 @@ export function renderUmlSvg(rawSteps: UmlStep[], title = ""): string {
   const headH = Math.max(...participants.map((p) => (isActor(p) ? ACTOR_H : BOX_H)));
   const headBottom = headTop + headH;
 
+  // Every row — message or marker — gets a y so msgY stays index-aligned
+  // with steps (the activation pass indexes it by raw step index). Message →
+  // message spacing is unchanged from the fragment-free renderer; marker rows
+  // use tighter bands sized to the pentagon tab, else divider or closing
+  // line. header→msg (46) clears the pentagon plus the label drawn above the
+  // arrow; 28 keeps an empty operand visible.
+  type RowKind = "msg" | "head" | "else" | "end";
+  const rowKind = (s: UmlStep): RowKind =>
+    !s.fragment ? "msg" : s.fragment === "alt" || s.fragment === "opt" ? "head" : s.fragment;
+  const MARKER_GAP: Record<Exclude<RowKind, "msg">, Record<RowKind, number>> = {
+    head: { msg: 46, head: 26, else: 28, end: 28 },
+    else: { msg: 46, head: 34, else: 28, end: 28 },
+    end: { msg: 34, head: 26, else: 28, end: 16 },
+  };
+
   const msgY: number[] = [];
   for (let i = 0; i < steps.length; i++) {
-    msgY.push(
-      i === 0
-        ? headBottom + HEAD_GAP
-        : msgY[i - 1] + ROW_GAP + (isSelf(steps[i - 1]) ? SELF_H : 0),
-    );
+    const cur = rowKind(steps[i]);
+    if (i === 0) {
+      // Normalization guarantees the first marker row can only be a header.
+      msgY.push(headBottom + (cur === "msg" ? HEAD_GAP : 30));
+      continue;
+    }
+    const prev = rowKind(steps[i - 1]);
+    const gap =
+      prev === "msg"
+        ? (cur === "msg" ? ROW_GAP : 30) + (isSelf(steps[i - 1]) ? SELF_H : 0)
+        : MARKER_GAP[prev][cur];
+    msgY.push(msgY[i - 1] + gap);
   }
   const lastY = msgY[steps.length - 1] + (isSelf(steps[steps.length - 1]) ? SELF_H : 0);
   const lifeBottom = lastY + TAIL;
@@ -186,6 +249,87 @@ export function renderUmlSvg(rawSteps: UmlStep[], title = ""): string {
   }
   const barAt = (p: number, y: number) =>
     bars.find((b) => b.p === p && b.top <= y && y <= b.bottom);
+
+  /* ----- fragments -----
+     Stack pass mirroring the balance normalization above. A frame spans the
+     lifelines of the messages it contains (self-loops extend right, matching
+     the width the horizontal pass granted them) plus padding; a closed child
+     folds its rect into its parent so nested frames stay visibly inside.
+     Frames only ever grow rightward, so the centers stay valid. */
+
+  interface Frag {
+    op: "alt" | "opt";
+    guard: string;
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+    elses: { y: number; guard: string }[];
+  }
+  const frags: Frag[] = [];
+  {
+    const stack: {
+      op: "alt" | "opt";
+      guard: string;
+      top: number;
+      minX: number;
+      maxX: number;
+      elses: { y: number; guard: string }[];
+    }[] = [];
+    steps.forEach((s, i) => {
+      if (s.fragment === "alt" || s.fragment === "opt") {
+        stack.push({ op: s.fragment, guard: s.description, top: msgY[i], minX: Infinity, maxX: -Infinity, elses: [] });
+      } else if (s.fragment === "else") {
+        stack[stack.length - 1].elses.push({ y: msgY[i], guard: s.description });
+      } else if (s.fragment === "end") {
+        const f = stack.pop()!;
+        let left: number;
+        let right: number;
+        if (f.minX === Infinity) {
+          // No contained messages — anchor a minimal frame at the first lifeline.
+          left = centers[0] - ACT_W / 2 - FRAG_PAD_X;
+          right = left + 120;
+        } else {
+          left = f.minX - FRAG_PAD_X;
+          right = f.maxX + FRAG_PAD_X;
+        }
+        // Room for the operator pentagon + [guard], and for each else guard.
+        const tabW = est(f.op, 12.5, true) + 24;
+        right = Math.max(right, left + tabW + (f.guard ? est(`[${f.guard}]`, 12.5) + 18 : 0) + 10);
+        for (const e of f.elses) {
+          right = Math.max(right, left + 14 + est(`[${e.guard || "else"}]`, 12.5) + 8);
+        }
+        frags.push({ op: f.op, guard: f.guard, top: f.top, bottom: msgY[i], left, right, elses: f.elses });
+        const parent = stack[stack.length - 1];
+        if (parent) {
+          // Fold the padded child rect in, inset so the parent line clears it.
+          parent.minX = Math.min(parent.minX, left - FRAG_NEST + FRAG_PAD_X);
+          parent.maxX = Math.max(parent.maxX, right + FRAG_NEST - FRAG_PAD_X);
+        }
+      } else {
+        const a = pIndex(s.source);
+        const b = pIndex(s.target);
+        let lo: number;
+        let hi: number;
+        if (a === b) {
+          // Loop reaches x + 46, label runs from x + 8 (see the draw code).
+          lo = centers[a] - ACT_W / 2;
+          hi = centers[a] + ACT_W / 2 + Math.max(46, 8 + est(s.description, 13.5)) + 6;
+        } else {
+          lo = Math.min(centers[a], centers[b]) - ACT_W / 2;
+          hi = Math.max(centers[a], centers[b]) + ACT_W / 2;
+        }
+        for (const f of stack) {
+          f.minX = Math.min(f.minX, lo);
+          f.maxX = Math.max(f.maxX, hi);
+        }
+      }
+    });
+    frags.sort((a, b) => a.top - b.top);
+  }
+  for (const f of frags) {
+    width = Math.max(width, f.right + FRAG_PAD_X + FRAME_PAD);
+  }
 
   /* ----- draw ----- */
 
@@ -236,8 +380,38 @@ export function renderUmlSvg(rawSteps: UmlStep[], title = ""): string {
     );
   }
 
-  // Messages.
+  // Combined fragments: frame, operator pentagon, [guard]s, else dividers.
+  // Drawn over the bars (a pentagon or guard often sits on a bar when the
+  // frame hugs one lifeline) but under the messages, so arrowheads stay crisp.
+  for (const f of frags) {
+    out.push(
+      `<rect x="${r(f.left)}" y="${r(f.top)}" width="${r(f.right - f.left)}" height="${r(f.bottom - f.top)}" fill="none" stroke="${INK}" stroke-width="1.3"/>`,
+    );
+    const tabW = est(f.op, 12.5, true) + 24;
+    out.push(
+      `<path d="M ${r(f.left)} ${r(f.top)} H ${r(f.left + tabW)} V ${r(f.top + FRAG_TAB_H - 7)} L ${r(f.left + tabW - 7)} ${r(f.top + FRAG_TAB_H)} H ${r(f.left)} Z" fill="#fff" stroke="${INK}" stroke-width="1.3"/>`,
+    );
+    out.push(
+      `<text x="${r(f.left + 9)}" y="${r(f.top + FRAG_TAB_H - 6)}" font-size="12.5" font-weight="600" fill="${INK}">${esc(f.op)}</text>`,
+    );
+    if (f.guard) {
+      out.push(
+        `<text x="${r(f.left + tabW + 8)}" y="${r(f.top + FRAG_TAB_H - 6)}" font-size="12.5" font-style="italic" fill="${INK}">[${esc(f.guard)}]</text>`,
+      );
+    }
+    for (const e of f.elses) {
+      out.push(
+        `<line x1="${r(f.left)}" y1="${r(e.y)}" x2="${r(f.right)}" y2="${r(e.y)}" stroke="${INK}" stroke-width="1.1" stroke-dasharray="6 4"/>`,
+      );
+      out.push(
+        `<text x="${r(f.left + 10)}" y="${r(e.y + 15)}" font-size="12.5" font-style="italic" fill="${INK}">[${esc(e.guard || "else")}]</text>`,
+      );
+    }
+  }
+
+  // Messages (marker rows draw from the frames list above).
   steps.forEach((s, i) => {
+    if (s.fragment) return;
     const y = msgY[i];
     const a = pIndex(s.source);
     const b = pIndex(s.target);
@@ -282,7 +456,13 @@ export function renderUmlSvg(rawSteps: UmlStep[], title = ""): string {
 
   const label =
     title ||
-    `Sequence diagram: ${steps.map((s) => `${s.source} to ${s.target}: ${s.description}`).join("; ")}`;
+    `Sequence diagram: ${steps
+      .map((s) =>
+        s.fragment
+          ? `${s.fragment}${s.description ? ` [${s.description}]` : ""}`
+          : `${s.source} to ${s.target}: ${s.description}`,
+      )
+      .join("; ")}`;
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r(width)} ${r(height)}" width="${r(width)}" role="img" aria-label="${esc(label)}" style="max-width:${r(width)}px;width:100%;height:auto;font-family:var(--font-sans),'Helvetica Neue',Arial,sans-serif">` +
@@ -316,13 +496,22 @@ export function parseUmlSteps(encoded: string): UmlStep[] | null {
     const arr = JSON.parse(decodeURIComponent(encoded));
     if (!Array.isArray(arr)) return null;
     return arr
-      .map((x) => ({
-        source: String(x?.source ?? ""),
-        target: String(x?.target ?? ""),
-        description: String(x?.description ?? ""),
-        session_end: Boolean(x?.session_end),
-      }))
-      .filter((s) => s.source && s.target && s.description);
+      .map((x): UmlStep => {
+        const fragment = asFragment(x?.fragment);
+        // Marker row: description carries the guard, participants stay empty.
+        // Message rows never get a fragment key, so pre-fragment metadata
+        // re-serializes byte-identically.
+        if (fragment) {
+          return { source: "", target: "", description: String(x?.description ?? ""), session_end: false, fragment };
+        }
+        return {
+          source: String(x?.source ?? ""),
+          target: String(x?.target ?? ""),
+          description: String(x?.description ?? ""),
+          session_end: Boolean(x?.session_end),
+        };
+      })
+      .filter((s) => s.fragment || (s.source && s.target && s.description));
   } catch {
     return null;
   }

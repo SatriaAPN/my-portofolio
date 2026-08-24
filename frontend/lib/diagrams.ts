@@ -58,7 +58,8 @@ export function hydrateDiagrams(html: string): string {
     const uml = figure.match(UML_ATTR);
     if (uml) {
       const steps = parseUmlSteps(uml[1]);
-      if (!steps || steps.length === 0) return figure;
+      // No message arrows (empty or fragment markers only) → leave untouched.
+      if (!steps || !steps.some((s) => !s.fragment)) return figure;
       const title = unescapeAttr(figure.match(TITLE_ATTR)?.[1] ?? "");
       return rebuildFigure(figure, renderUmlSvg(steps, title));
     }

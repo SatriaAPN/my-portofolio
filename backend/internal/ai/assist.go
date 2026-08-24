@@ -33,6 +33,7 @@ Sequence diagram metadata (data-uml) — an ARRAY of arrows, rendered top to bot
   [{"source":"user","target":"BE","description":"blog request","session_end":false}, ...]
 - A participant named "user" or "actor" is drawn as a stick figure; other names as boxes.
 - "session_end": true closes the SENDER's activation bar — put it on the reply that completes a request.
+- Conditional blocks: marker rows mixed into the same array — {"fragment":"alt","description":"<guard>"} opens a frame, {"fragment":"else","description":""} starts the alternative branch, {"fragment":"end"} closes it. "opt" = guarded frame without else. Marker rows have NO source/target. Keep markers balanced: every alt/opt needs an end; else only directly inside an alt; fragments may nest.
 - An optional title goes on a separate data-uml-title="..." attribute (plain text).
 
 Flowchart metadata (data-flowchart) — one object:

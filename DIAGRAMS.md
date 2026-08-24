@@ -59,6 +59,39 @@ Semantics:
   stays active until its own last message; a closed participant's next
   involvement opens a fresh bar.
 
+### Combined fragments (`alt` / `opt`)
+
+Conditional blocks are **marker rows** mixed into the same flat array. A
+marker row sets `"fragment"` and carries its guard text in `"description"`;
+it has **no participants** (`source`/`target` empty or omitted,
+`session_end` false or omitted):
+
+```json
+[
+  { "source": "user",   "target": "BE",     "description": "register server",    "session_end": false },
+  { "source": "BE",     "target": "server", "description": "disk rebuild check", "session_end": false },
+  { "source": "server", "target": "BE",     "description": "disk rebuild result", "session_end": true },
+  { "fragment": "alt",  "description": "has rebuilding disk" },
+  { "source": "BE", "target": "BE", "description": "insert tracker", "session_end": false },
+  { "fragment": "else", "description": "" },
+  { "source": "BE", "target": "BE", "description": "skip registration", "session_end": false },
+  { "fragment": "end" },
+  { "source": "BE", "target": "user", "description": "register result", "session_end": true }
+]
+```
+
+- `"alt"` and `"opt"` open a frame around the rows that follow (guard
+  optional); `"else"` starts the next operand of an `alt` (guard optional —
+  renders as `[else]`); `"end"` closes the innermost open frame. Fragments
+  may nest.
+- Balance rules: every `alt`/`opt` needs an `end`, and `else` belongs
+  directly inside an `alt`. The renderer is lenient — stray `else`/`end`
+  rows are dropped and unclosed frames auto-close at the bottom — but
+  writers should emit balanced markers; the editor dialog refuses to save
+  unbalanced ones.
+- Degradation: marker rows carry no participants, so readers that predate
+  fragments filter them out and render the same diagram without frames.
+
 ## Flowchart (`data-flowchart`)
 
 The metadata is one object: a title (optional, `""` for none), nodes on a
