@@ -53,6 +53,14 @@ export function DiagramLightbox() {
     setView(s, (window.innerWidth - o.w * s) / 2, (window.innerHeight - o.h * s) / 2);
   };
 
+  // Ref callback: runs at commit, before the browser paints, so the stage is
+  // already fitted on its first visible frame (reading view/stage refs during
+  // render is not allowed, and would not update on later opens anyway).
+  const attachStage = (el: HTMLDivElement | null) => {
+    stageRef.current = el;
+    if (el && opened) fit(opened);
+  };
+
   // Open on click of any diagram figure (event delegation over the article;
   // the editor's RTE figures open the builder instead, so skip those).
   useEffect(() => {
@@ -67,25 +75,22 @@ export function DiagramLightbox() {
       const w = Number(svg.getAttribute("width")) || vb[2];
       const h = vb[3] || svg.getBoundingClientRect().height;
       if (!w || !h) return;
-      const o: Opened = {
+      setOpened({
         html: svg.outerHTML,
         w,
         h,
         label: svg.getAttribute("aria-label") || "Diagram",
-      };
-      view.current = { s: 1, tx: 0, ty: 0 };
-      setOpened(o);
-      // Stage mounts on this state update; fit() reaches it via the effect below.
+      });
+      // The stage mounts on this state update; attachStage fits it on mount.
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
   }, []);
 
-  // On open: fit to screen, lock page scroll, bind Escape + non-passive wheel
-  // (React's onWheel is passive, so preventDefault needs a manual listener).
+  // On open: lock page scroll, bind Escape + non-passive wheel (React's
+  // onWheel is passive, so preventDefault needs a manual listener).
   useEffect(() => {
     if (!opened) return;
-    fit(opened);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
@@ -185,7 +190,6 @@ export function DiagramLightbox() {
     cursor: "pointer",
   };
 
-  const { s, tx, ty } = view.current;
   return (
     <div
       ref={overlayRef}
@@ -206,14 +210,15 @@ export function DiagramLightbox() {
       onDoubleClick={onDoubleClick}
     >
       <div
-        ref={stageRef}
+        ref={attachStage}
         style={{
           position: "absolute",
           left: 0,
           top: 0,
           width: opened.w,
           height: opened.h,
-          transform: `translate(${tx}px, ${ty}px) scale(${s})`,
+          // Placeholder until attachStage fits it at commit (pre-paint).
+          transform: "scale(0)",
           transformOrigin: "0 0",
           background: "#fff",
           borderRadius: 10,
