@@ -101,6 +101,21 @@ func (s *Server) handleDeletePost(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "invalid id")
 		return
 	}
+	post, err := s.store.GetPost(id)
+	if notFound(err) {
+		writeErr(w, 404, "post not found")
+		return
+	}
+	if err != nil {
+		writeErr(w, 500, "failed to load post")
+		return
+	}
+	// Live posts are public — they must be moved to draft before deletion,
+	// so a post can never disappear from the site by an accidental delete.
+	if post.Status == "LIVE" {
+		writeErr(w, 409, "live posts can't be deleted — set the post to draft first")
+		return
+	}
 	if err := s.store.DeletePost(id); err != nil {
 		writeErr(w, 500, "failed to delete post")
 		return

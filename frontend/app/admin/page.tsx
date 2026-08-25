@@ -13,10 +13,12 @@ import { SiteSection } from "@/components/admin/SiteSection";
 import { CVsSection } from "@/components/admin/CVsSection";
 import { MessagesSection, ChatLogsSection } from "@/components/admin/MessagesChatLogs";
 import {
+  ApiError,
   adminAnalytics,
   adminChatlogs,
   adminCreateProject,
   adminDeleteCV,
+  adminDeletePost,
   adminListCVs,
   adminListPosts,
   adminListProjects,
@@ -300,7 +302,21 @@ function Dashboard({ user }: { user: User }) {
           {section === "overview" && <OverviewSection data={overview} />}
           {section === "metrics" && <AnalyticsSection data={analytics} />}
           {section === "posts" && (
-            <PostsSection posts={posts} onEdit={(id) => router.push(`/admin/editor?post=${id}`)} />
+            <PostsSection
+              posts={posts}
+              onEdit={(id) => router.push(`/admin/editor?post=${id}`)}
+              onDelete={async (id) => {
+                const post = posts.find((p) => p.id === id);
+                if (!window.confirm(`Delete "${post?.title ?? "this post"}"? This can't be undone.`)) return;
+                try {
+                  await adminDeletePost(id);
+                  await reload();
+                  toast("Post deleted");
+                } catch (e) {
+                  toast(e instanceof ApiError ? e.message : "Could not delete post");
+                }
+              }}
+            />
           )}
           {section === "projects" && <ProjectsSection projects={projects} onRefresh={reload} />}
           {section === "site" && site && <SiteSection site={site} onRefresh={reload} />}
