@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { ReadingProgress } from "@/components/ReadingProgress";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { DiagramLightbox } from "@/components/DiagramLightbox";
 import { PostTags } from "@/components/PostTags";
 import { getLivePosts, getPost } from "@/lib/api";
 import { ApiError } from "@/lib/api";
@@ -115,12 +116,14 @@ export default async function BlogPostPage({
       </div>
 
       {/* BODY — diagrams are stored as metadata-only figures; render them
-          server-side so the page ships complete SVG with no client JS. */}
+          server-side so the page ships complete SVG. The lightbox island only
+          clones that SVG on click for zoom/pan — no client-side rendering. */}
       <article
         className="article mx-auto px-5 pt-11 pb-6 md:px-10"
         style={{ maxWidth: 760 }}
         dangerouslySetInnerHTML={{ __html: hydrateDiagrams(post.body || `<p>${post.excerpt}</p>`) }}
       />
+      <DiagramLightbox />
 
       {/* SHARE */}
       <div

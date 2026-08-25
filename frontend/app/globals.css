@@ -288,6 +288,12 @@
   display: inline-block;
   height: auto;
 }
+/* On the public page (not the editor RTE, where click opens the builder)
+   clicking a diagram opens the zoom lightbox. */
+.article:not([data-rte]) figure[data-uml],
+.article:not([data-rte]) figure[data-flowchart] {
+  cursor: zoom-in;
+}
 /* In the editor the figure is an atomic block — click it to reopen the builder. */
 [data-rte] figure[data-uml],
 [data-rte] figure[data-flowchart] {
